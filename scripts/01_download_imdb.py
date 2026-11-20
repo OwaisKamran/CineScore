@@ -16,6 +16,7 @@ FILES = [
     "title.basics.tsv.gz",   # title type, year, runtime, genres, isAdult
     "title.ratings.tsv.gz",  # averageRating (target) and numVotes (used only to filter)
     "title.crew.tsv.gz",     # director and writer IDs
+    "name.basics.tsv.gz",    # person names (for the app's director/writer search)
 ]
 RAW_DIR = Path(__file__).resolve().parents[1] / "data" / "raw"
 

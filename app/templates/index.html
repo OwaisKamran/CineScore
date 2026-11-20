@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CineScore</title>
+  <meta name="description" content="Predict a movie's IMDb rating before it is released.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>CineScore</h1>
+    <p class="sub">Predict a film's IMDb rating <strong>before release</strong>, from its genre, runtime,
+      budget and the track record of the people making it.</p>
+  </div>
+</header>
+
+<main class="wrap grid">
+  <form id="form" novalidate>
+    <section class="card">
+      <h2>The film</h2>
+      <div class="row">
+        <label class="grow">Working title <span class="opt">(optional)</span>
+          <input name="title" maxlength="200" placeholder="e.g. Untitled space drama"></label>
+      </div>
+      <div class="row">
+        <label>Release date
+          <input type="date" name="release_date" required min="1980-01-01" max="2035-12-31"></label>
+        <label>Runtime (min)
+          <input type="number" name="runtime" required min="60" max="240" value="110"></label>
+        <label>Budget (US$) <span class="opt">(optional)</span>
+          <input type="number" name="budget_usd" min="10000" max="1000000000" step="1000"
+                 placeholder="e.g. 40000000"></label>
+      </div>
+      <fieldset>
+        <legend>Genres <span class="opt">(pick 1–3)</span></legend>
+        <div id="genres" class="chips"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Story elements <span class="opt">(optional)</span></legend>
+        <div id="keywords" class="chips"></div>
+      </fieldset>
+    </section>
+
+    <section class="card">
+      <h2>People</h2>
+      <p class="hint">Start typing a name, then pick from the list. Their earlier films' average IMDb
+        rating feeds the model.</p>
+      <div class="people">
+        <div class="ac" data-role="director" data-max="3"><label>Director(s)</label></div>
+        <div class="ac" data-role="writer" data-max="5"><label>Writer(s)</label></div>
+        <div class="ac" data-role="cast" data-max="3"><label>Top-billed cast (up to 3)</label></div>
+        <div class="ac" data-role="franchise" data-max="1"><label>Franchise / series <span class="opt">(if a sequel)</span></label></div>
+      </div>
+      <fieldset>
+        <legend>Lead actor</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="female_lead" value="no"> Male</label>
+          <label class="chip"><input type="radio" name="female_lead" value="yes"> Female</label>
+          <label class="chip"><input type="radio" name="female_lead" value="unknown" checked> Not sure</label>
+        </div>
+      </fieldset>
+    </section>
+
+    <section class="card">
+      <h2>Production</h2>
+      <div class="row">
+        <label>Original language <select name="original_language" id="language"></select></label>
+        <label>US certification
+          <select name="us_certification" id="cert"><option value="">Not rated yet</option></select></label>
+      </div>
+      <div class="row">
+        <label>Main production country <select name="main_country" id="country"></select></label>
+        <label>Other countries <span class="opt">(optional)</span>
+          <select id="other_countries" multiple size="4"></select></label>
+      </div>
+      <div class="row">
+        <label>Production companies
+          <input type="number" name="n_production_companies" min="1" max="30" value="2"></label>
+        <label>Spoken languages
+          <input type="number" name="n_spoken_languages" min="1" max="12" value="1"></label>
+        <label class="check"><input type="checkbox" name="major_studio"> Major studio involved</label>
+      </div>
+    </section>
+
+    <div id="error" class="error" role="alert" hidden></div>
+    <button type="submit" id="submit">Predict rating</button>
+  </form>
+
+  <aside id="result" class="card result" aria-live="polite">
+    <div id="placeholder" class="placeholder">
+      <p class="big">?</p>
+      <p>Fill in the film's details and press <strong>Predict rating</strong>.</p>
+      <p class="hint" id="modelinfo"></p>
+    </div>
+    <div id="output" hidden>
+      <p class="label" id="out-title"></p>
+      <p class="score"><span id="score"></span><span class="of">/10</span></p>
+      <p class="interval">80% of similar films land between <strong id="lo"></strong> and <strong id="hi"></strong></p>
+      <svg id="scale" viewBox="0 0 300 46" role="img" aria-label="Predicted rating on a 1 to 10 scale"></svg>
+      <h3>What drives this prediction</h3>
+      <p class="hint">Change in predicted rating compared with a neutral value for each input
+        (e.g. an unknown director).</p>
+      <svg id="drivers" role="img" aria-label="Effect of each input on the prediction"></svg>
+    </div>
+  </aside>
+</main>
+
+<footer class="wrap foot">
+  <p>CT-378 Machine Learning project. Information courtesy of IMDb (https://www.imdb.com), used with
+    permission for non-commercial use. This product uses the TMDB API but is not endorsed or
+    certified by TMDB.</p>
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
