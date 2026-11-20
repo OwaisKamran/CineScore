@@ -1,0 +1,141 @@
+{
+  "model": "Gradient Boosting (HGB)",
+  "best_params": {
+    "min_samples_leaf": 50,
+    "max_leaf_nodes": 63,
+    "max_iter": 600,
+    "learning_rate": 0.03,
+    "l2_regularization": 1.0
+  },
+  "features_numeric": [
+    "year",
+    "runtime",
+    "release_month",
+    "release_dow",
+    "log_budget",
+    "budget_known",
+    "is_franchise",
+    "n_genres",
+    "n_production_companies",
+    "n_production_countries",
+    "n_spoken_languages",
+    "major_studio",
+    "us_production",
+    "female_lead",
+    "genre_action",
+    "genre_adventure",
+    "genre_animation",
+    "genre_biography",
+    "genre_comedy",
+    "genre_crime",
+    "genre_documentary",
+    "genre_drama",
+    "genre_family",
+    "genre_fantasy",
+    "genre_history",
+    "genre_horror",
+    "genre_music",
+    "genre_musical",
+    "genre_mystery",
+    "genre_news",
+    "genre_romance",
+    "genre_sci_fi",
+    "genre_sport",
+    "genre_thriller",
+    "genre_war",
+    "genre_western",
+    "kw_based_on_novel",
+    "kw_based_on_true_story",
+    "kw_biography",
+    "kw_superhero",
+    "kw_remake",
+    "kw_sequel",
+    "kw_based_on_comic",
+    "kw_woman_director",
+    "kw_anime",
+    "kw_slasher",
+    "director_prev_mean",
+    "director_prev_count",
+    "writer_prev_mean",
+    "writer_prev_count",
+    "cast_prev_mean",
+    "cast_prev_count",
+    "franchise_prev_mean",
+    "franchise_prev_count"
+  ],
+  "features_categorical": [
+    "original_language",
+    "us_certification",
+    "main_country"
+  ],
+  "interval_80": [
+    -0.9603766791014701,
+    0.9557824611123088
+  ],
+  "test_metrics": {
+    "MAE": 0.6441,
+    "RMSE": 0.8722,
+    "R2": 0.4041
+  },
+  "baseline_test_metrics": {
+    "MAE": 0.8863,
+    "RMSE": 1.1356,
+    "R2": -0.0101
+  },
+  "test_interval_coverage": 0.7873,
+  "validation_table": [
+    {
+      "model": "Baseline (mean)",
+      "CV MAE": NaN,
+      "train MAE": 0.8473,
+      "val MAE": 0.9194,
+      "val RMSE": 1.2077,
+      "val R2": -0.0261,
+      "fit time (s)": 0.2
+    },
+    {
+      "model": "Ridge",
+      "CV MAE": 0.5835,
+      "train MAE": 0.5794,
+      "val MAE": 0.6472,
+      "val RMSE": 0.8751,
+      "val R2": 0.4612,
+      "fit time (s)": 2.7
+    },
+    {
+      "model": "KNN",
+      "CV MAE": 0.608,
+      "train MAE": 0.0,
+      "val MAE": 0.6656,
+      "val RMSE": 0.9181,
+      "val R2": 0.407,
+      "fit time (s)": 8.6
+    },
+    {
+      "model": "Random Forest",
+      "CV MAE": 0.5625,
+      "train MAE": 0.2522,
+      "val MAE": 0.63,
+      "val RMSE": 0.8667,
+      "val R2": 0.4715,
+      "fit time (s)": 111.3
+    },
+    {
+      "model": "Gradient Boosting (HGB)",
+      "CV MAE": 0.5468,
+      "train MAE": 0.4526,
+      "val MAE": 0.6208,
+      "val RMSE": 0.8413,
+      "val R2": 0.502,
+      "fit time (s)": 75.1
+    }
+  ],
+  "train_rows": 23333,
+  "test_rows": 4118,
+  "versions": {
+    "python": "3.13.18",
+    "scikit-learn": "1.9.1",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3"
+  }
+}
