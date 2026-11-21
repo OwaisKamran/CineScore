@@ -46,6 +46,16 @@ python app/index.py        # open http://localhost:5000
 `POST /predict` takes a JSON description of the film and returns the predicted rating, an 80%
 interval and the per-input effects; invalid input returns HTTP 400 with a readable message.
 
+## Run the Streamlit app locally
+
+```bash
+pip install -r streamlit_app/requirements.txt
+streamlit run streamlit_app/streamlit_app.py     # open http://localhost:8501
+```
+
+The Streamlit app reuses the same saved pipeline (`app/model/`), name lookups (`app/data/`) and
+validation code (`app/predictor.py`) as the Flask app.
+
 ## Deployment
 
 The `app/` folder is self-contained (model, lookups, `requirements.txt`). Planned deployments,
@@ -60,6 +70,7 @@ scripts/    data collection and feature building
 notebooks/  EDA, modelling, evaluation
 models/     saved joblib pipeline
 app/        Flask app (index.py, predictor.py, templates/, static/, model/, data/)
+streamlit_app/  Streamlit app for Streamlit Community Cloud (streamlit_app.py, requirements.txt)
 reports/    figures and final report
 ```
 
