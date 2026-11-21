@@ -1,6 +1,8 @@
 # Raw/processed data are downloaded by scripts (IMDb licence forbids redistribution)
 data/raw/
 data/processed/
+data/csv/
+*.csv
 __pycache__/
 .ipynb_checkpoints/
 .venv/
@@ -12,3 +14,7 @@ __pycache__/
 *.env
 venv/
 env/
+
+# Local notes and tool settings (kept on this PC, not in the repo)
+CLAUDE.md
+.claude/

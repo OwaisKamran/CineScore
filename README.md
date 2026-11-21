@@ -23,6 +23,24 @@ No website scraping is used. Post-release fields (`numVotes`, revenue, popularit
 **never** used as features; `numVotes >= 2000` is used only to select films with a stable rating.
 Personal identifiers: only public cast/crew IDs are used, to compute aggregate track-record features.
 
+### Data format: Parquet
+
+The processed tables (`data/processed/*.parquet`) are stored as Parquet rather than CSV:
+
+- **Smaller:** `features.parquet` is 1.4 MB; the same table as CSV is 5.8 MB.
+- **Faster:** it loads in about 0.04 s instead of about 0.9 s as CSV.
+- **Types are kept:** dates stay dates (a CSV turns `sort_date` into plain text), integer and
+  true/false columns keep their type, and missing values stay missing instead of becoming empty strings.
+
+To open the tables in Excel, export them locally:
+
+```bash
+python scripts/export_csv.py            # data/processed/*.parquet -> data/csv/*.csv
+```
+
+The CSV files (and all raw and processed data) are git-ignored and never committed: they are derived
+from the IMDb Non-Commercial Datasets, which may not be republished. The download scripts recreate them.
+
 ## Setup
 
 ```bash
