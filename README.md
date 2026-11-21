@@ -62,7 +62,8 @@ validation code (`app/predictor.py`) as the Flask app.
 Deployments, from the options in the course guidelines:
 
 1. **Local Flask app.** See "Run the web app locally" above.
-2. **Streamlit Community Cloud.** At https://share.streamlit.io choose *Create app*, pick this
+2. **Streamlit Community Cloud**, live at https://cinescore-ml.streamlit.app. To redeploy elsewhere: at
+   https://share.streamlit.io choose *Create app*, pick this
    repository, branch `main`, main file `streamlit_app/streamlit_app.py`, and Python 3.12 under
    *Advanced settings*. Cloud reads the theme from `.streamlit/config.toml` in the repository root.
 3. **Hugging Face model repo** with the pipeline and model card (`huggingface/model_card.md`), and a
@@ -95,7 +96,7 @@ reports/    figures and final report
 ## Deployment links
 
 - Local Flask app: `python app/index.py` → http://localhost:5000
-- Streamlit Community Cloud: not deployed yet (steps under Deployment)
+- Streamlit Community Cloud: https://cinescore-ml.streamlit.app
 - Hugging Face model repo (pipeline + model card): https://huggingface.co/OwaisKamran/cinescore
 - Hugging Face Space: pending (needs a PRO account; files in `huggingface/space/`)
 

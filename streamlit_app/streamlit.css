@@ -3,7 +3,7 @@
 
 /* ---------- chrome: hide default header, menu, toolbar, footer */
 header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
-#MainMenu, footer, .stDeployButton, [data-testid="stAppDeployButton"],
+#MainMenu, footer, .stDeployButton, [data-testid="stAppDeployButton"], [data-testid="stHeaderActionElements"],
 [data-testid="InputInstructions"] { display: none !important; }
 
 .stApp { background: var(--cs-bg); }
