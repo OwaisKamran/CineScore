@@ -12,6 +12,8 @@ and streaming acquisition teams screening projects.
 | Baseline (training mean) | 0.886 | 1.136 | -0.01 |
 | Gradient Boosting (HGB), final model | **0.644** | **0.871** | **0.41** |
 
+**Report:** [docs/CineScore_Report.pdf](docs/CineScore_Report.pdf) (editable version: [docs/CineScore_Report.docx](docs/CineScore_Report.docx); app screenshots in `docs/screenshots/`).
+
 ## Data
 
 | Dataset | Source | Collection method | Licence / terms | Accessed |
@@ -111,7 +113,8 @@ app/        Flask app (index.py, predictor.py, templates/, static/, model/, data
 streamlit_app/  Streamlit app for Streamlit Community Cloud (streamlit_app.py, streamlit.css, requirements.txt)
 .streamlit/ Streamlit theme (config.toml)
 huggingface/    model card and Hugging Face Space files (stlite index.html, README)
-reports/    figures and final report
+reports/    figures (reports/figures/, made by the notebooks)
+docs/       project report (PDF + DOCX) and app screenshots
 ```
 
 ## Deployment links
