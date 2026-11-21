@@ -40,7 +40,9 @@ director, writers, lead cast and franchise.
 
 ## How to use
 
-The pipeline needs **scikit-learn 1.9.1** exactly (joblib files are tied to the version that saved them).
+The pipeline needs **scikit-learn 1.8.0** exactly, with pandas 3.0.2, numpy 2.4.3 and joblib 1.5.3 (joblib
+files are tied to the version that saved them). These are the versions Pyodide 314 ships, so the same file
+also runs in the browser with stlite (as in the Space). Python 3.12 and 3.14 both load it.
 
 ```python
 import json, joblib, pandas as pd
@@ -86,10 +88,10 @@ was refitted on train + validation (23,333 films) before the single test evaluat
 | Ridge | 0.583 | 0.647 | 0.46 |
 | KNN | 0.608 | 0.666 | 0.41 |
 | Random Forest | 0.562 | 0.630 | 0.47 |
-| **HistGradientBoosting (this model)** | **0.547** | **0.621** | **0.50** |
+| **HistGradientBoosting (this model)** | **0.547** | **0.623** | **0.50** |
 
-**Test set (newest 4,118 films):** MAE **0.644**, RMSE 0.872, R² 0.404, against a baseline MAE of 0.886.
-The 80% prediction interval (prediction -0.96 / +0.96, from validation residuals) covered 78.7% of
+**Test set (newest 4,118 films):** MAE **0.644**, RMSE 0.871, R² 0.405, against a baseline MAE of 0.886.
+The 80% prediction interval (prediction -0.98 / +0.95, from validation residuals) covered 78.8% of
 test films.
 
 ## Limitations

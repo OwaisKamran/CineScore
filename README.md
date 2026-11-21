@@ -10,7 +10,7 @@ and streaming acquisition teams screening projects.
 | Test set (4,118 films, 2022-2026) | MAE | RMSE | R² |
 |---|---|---|---|
 | Baseline (training mean) | 0.886 | 1.136 | -0.01 |
-| Gradient Boosting (HGB), final model | **0.644** | **0.872** | **0.40** |
+| Gradient Boosting (HGB), final model | **0.644** | **0.871** | **0.41** |
 
 ## Data
 

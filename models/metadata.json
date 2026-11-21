@@ -69,20 +69,20 @@
     "main_country"
   ],
   "interval_80": [
-    -0.9603766791014701,
-    0.9557824611123088
+    -0.9783149960636733,
+    0.9469762138842301
   ],
   "test_metrics": {
-    "MAE": 0.6441,
-    "RMSE": 0.8722,
-    "R2": 0.4041
+    "MAE": 0.6439,
+    "RMSE": 0.8715,
+    "R2": 0.4051
   },
   "baseline_test_metrics": {
     "MAE": 0.8863,
     "RMSE": 1.1356,
     "R2": -0.0101
   },
-  "test_interval_coverage": 0.7873,
+  "test_interval_coverage": 0.7878,
   "validation_table": [
     {
       "model": "Baseline (mean)",
@@ -91,7 +91,7 @@
       "val MAE": 0.9194,
       "val RMSE": 1.2077,
       "val R2": -0.0261,
-      "fit time (s)": 0.2
+      "fit time (s)": 0.5
     },
     {
       "model": "Ridge",
@@ -100,7 +100,7 @@
       "val MAE": 0.6472,
       "val RMSE": 0.8751,
       "val R2": 0.4612,
-      "fit time (s)": 2.7
+      "fit time (s)": 13.1
     },
     {
       "model": "KNN",
@@ -109,33 +109,33 @@
       "val MAE": 0.6656,
       "val RMSE": 0.9181,
       "val R2": 0.407,
-      "fit time (s)": 8.6
+      "fit time (s)": 21.1
     },
     {
       "model": "Random Forest",
-      "CV MAE": 0.5625,
-      "train MAE": 0.2522,
-      "val MAE": 0.63,
-      "val RMSE": 0.8667,
-      "val R2": 0.4715,
-      "fit time (s)": 111.3
+      "CV MAE": 0.5615,
+      "train MAE": 0.252,
+      "val MAE": 0.6301,
+      "val RMSE": 0.8661,
+      "val R2": 0.4723,
+      "fit time (s)": 212.0
     },
     {
       "model": "Gradient Boosting (HGB)",
       "CV MAE": 0.5468,
-      "train MAE": 0.4526,
-      "val MAE": 0.6208,
-      "val RMSE": 0.8413,
-      "val R2": 0.502,
-      "fit time (s)": 75.1
+      "train MAE": 0.4685,
+      "val MAE": 0.6226,
+      "val RMSE": 0.8445,
+      "val R2": 0.4983,
+      "fit time (s)": 121.7
     }
   ],
   "train_rows": 23333,
   "test_rows": 4118,
   "versions": {
-    "python": "3.13.18",
-    "scikit-learn": "1.9.1",
-    "pandas": "3.0.5",
-    "numpy": "2.5.3"
+    "python": "3.12.10",
+    "scikit-learn": "1.8.0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.3"
   }
 }
