@@ -53,14 +53,30 @@ pip install -r streamlit_app/requirements.txt
 streamlit run streamlit_app/streamlit_app.py     # open http://localhost:8501
 ```
 
-The Streamlit app reuses the same saved pipeline (`app/model/`), name lookups (`app/data/`) and
+Run it from the repository root so `.streamlit/config.toml` (the theme) is picked up. Both apps share
+the same look through `app/static/tokens.css`. The Streamlit app reuses the same saved pipeline (`app/model/`), name lookups (`app/data/`) and
 validation code (`app/predictor.py`) as the Flask app.
 
 ## Deployment
 
-The `app/` folder is self-contained (model, lookups, `requirements.txt`). Planned deployments,
-from the options in the course guidelines: Streamlit Community Cloud and a Hugging Face Space
-(with a model card), plus the local Flask app.
+Deployments, from the options in the course guidelines:
+
+1. **Local Flask app.** See "Run the web app locally" above.
+2. **Streamlit Community Cloud.** At https://share.streamlit.io choose *Create app*, pick this
+   repository, branch `main`, main file `streamlit_app/streamlit_app.py`, and Python 3.12 under
+   *Advanced settings*. Cloud reads the theme from `.streamlit/config.toml` in the repository root.
+3. **Hugging Face model repo** with the pipeline and model card (`huggingface/model_card.md`), and a
+   **Space** that runs the Streamlit app in Docker (`huggingface/space/`). Both are uploaded by:
+
+   ```bash
+   pip install "huggingface_hub[cli]"
+   hf auth login                                # paste a Write token in your own terminal
+   python scripts/06_publish_huggingface.py     # model repo + Space under the logged-in account
+   ```
+
+   Hugging Face no longer offers a built-in Streamlit SDK (Streamlit runs through Docker), and Docker
+   or Gradio Spaces on the free CPU tier now need a PRO subscription. The Space files are ready and
+   tested locally; they will be published once a PRO account is available.
 
 ## Repository layout
 
@@ -70,15 +86,18 @@ scripts/    data collection and feature building
 notebooks/  EDA, modelling, evaluation
 models/     saved joblib pipeline
 app/        Flask app (index.py, predictor.py, templates/, static/, model/, data/)
-streamlit_app/  Streamlit app for Streamlit Community Cloud (streamlit_app.py, requirements.txt)
+streamlit_app/  Streamlit app for Streamlit Community Cloud (streamlit_app.py, streamlit.css, requirements.txt)
+.streamlit/ Streamlit theme (config.toml)
+huggingface/    model card and Hugging Face Space files (Dockerfile, README)
 reports/    figures and final report
 ```
 
 ## Deployment links
 
 - Local Flask app: `python app/index.py` → http://localhost:5000
-- Streamlit Community Cloud: _TBD_
-- Hugging Face Space: _TBD_
+- Streamlit Community Cloud: not deployed yet (steps under Deployment)
+- Hugging Face model repo (pipeline + model card): https://huggingface.co/OwaisKamran/cinescore
+- Hugging Face Space: pending (needs a PRO account; files in `huggingface/space/`)
 
 ## Credits
 
