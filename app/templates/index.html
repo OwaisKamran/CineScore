@@ -4,113 +4,159 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CineScore</title>
-  <meta name="description" content="Predict a movie's IMDb rating before it is released.">
+  <meta name="description" content="Forecast a film's IMDb rating before it is released.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <h1>CineScore</h1>
-    <p class="sub">Predict a film's IMDb rating <strong>before release</strong>, from its genre, runtime,
-      budget and the track record of the people making it.</p>
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <h1 class="brand">CineScore</h1>
+    <p class="tagline">Forecast a film's IMDb rating before it opens.</p>
+    <p class="meta" id="modelinfo"></p>
   </div>
 </header>
 
-<main class="wrap grid">
-  <form id="form" novalidate>
-    <section class="card">
-      <h2>The film</h2>
-      <div class="row">
-        <label class="grow">Working title <span class="opt">(optional)</span>
+<main class="wrap layout">
+  <form id="form" class="sheet" novalidate>
+    <section class="sec" aria-labelledby="h-film">
+      <div class="sec__head">
+        <h2 id="h-film">Film details</h2>
+        <p class="sec__desc">What the film is, how long it runs and what it costs.</p>
+      </div>
+      <div class="fields">
+        <label class="field field--wide"><span class="field__label">Working title <em>optional</em></span>
           <input name="title" maxlength="200" placeholder="e.g. Untitled space drama"></label>
-      </div>
-      <div class="row">
-        <label>Release date
+        <label class="field"><span class="field__label">Release date</span>
           <input type="date" name="release_date" required min="1980-01-01" max="2035-12-31"></label>
-        <label>Runtime (min)
-          <input type="number" name="runtime" required min="60" max="240" value="110"></label>
-        <label>Budget (US$) <span class="opt">(optional)</span>
+        <label class="field"><span class="field__label">Runtime <em>minutes</em></span>
+          <input type="number" name="runtime" required min="60" max="240" value="110" inputmode="numeric"></label>
+        <label class="field"><span class="field__label">Budget <em>US$, optional</em></span>
           <input type="number" name="budget_usd" min="10000" max="1000000000" step="1000"
-                 placeholder="e.g. 40000000"></label>
+                 placeholder="e.g. 40000000" inputmode="numeric"></label>
+        <label class="field"><span class="field__label">US certification</span>
+          <select name="us_certification" id="cert"><option value="">Not rated yet</option></select></label>
       </div>
-      <fieldset>
-        <legend>Genres <span class="opt">(pick 1–3)</span></legend>
+      <fieldset class="group">
+        <legend class="field__label">Genres <em>pick 1 to 3</em></legend>
         <div id="genres" class="chips"></div>
       </fieldset>
-      <fieldset>
-        <legend>Story elements <span class="opt">(optional)</span></legend>
+      <fieldset class="group">
+        <legend class="field__label">Story elements <em>optional</em></legend>
         <div id="keywords" class="chips"></div>
       </fieldset>
     </section>
 
-    <section class="card">
-      <h2>People</h2>
-      <p class="hint">Start typing a name, then pick from the list. Their earlier films' average IMDb
-        rating feeds the model.</p>
-      <div class="people">
-        <div class="ac" data-role="director" data-max="3"><label>Director(s)</label></div>
-        <div class="ac" data-role="writer" data-max="5"><label>Writer(s)</label></div>
-        <div class="ac" data-role="cast" data-max="3"><label>Top-billed cast (up to 3)</label></div>
-        <div class="ac" data-role="franchise" data-max="1"><label>Franchise / series <span class="opt">(if a sequel)</span></label></div>
+    <section class="sec" aria-labelledby="h-people">
+      <div class="sec__head">
+        <h2 id="h-people">People</h2>
+        <p class="sec__desc">Search a name and pick it. The average rating of their earlier films
+          feeds the model. Leave a role empty for a debut.</p>
       </div>
-      <fieldset>
-        <legend>Lead actor</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="female_lead" value="no"> Male</label>
-          <label class="chip"><input type="radio" name="female_lead" value="yes"> Female</label>
-          <label class="chip"><input type="radio" name="female_lead" value="unknown" checked> Not sure</label>
+      <div class="fields">
+        <div class="field ac" data-role="director" data-max="3"><span class="field__label">Director <em>up to 3</em></span></div>
+        <div class="field ac" data-role="writer" data-max="5"><span class="field__label">Writers <em>up to 5</em></span></div>
+        <div class="field ac" data-role="cast" data-max="3"><span class="field__label">Lead cast <em>up to 3</em></span></div>
+        <div class="field ac" data-role="franchise" data-max="1"><span class="field__label">Franchise <em>if a sequel</em></span></div>
+      </div>
+      <fieldset class="group">
+        <legend class="field__label">Lead role</legend>
+        <div class="segmented">
+          <label><input type="radio" name="female_lead" value="unknown" checked><span>Not sure</span></label>
+          <label><input type="radio" name="female_lead" value="no"><span>Male</span></label>
+          <label><input type="radio" name="female_lead" value="yes"><span>Female</span></label>
         </div>
       </fieldset>
     </section>
 
-    <section class="card">
-      <h2>Production</h2>
-      <div class="row">
-        <label>Original language <select name="original_language" id="language"></select></label>
-        <label>US certification
-          <select name="us_certification" id="cert"><option value="">Not rated yet</option></select></label>
+    <section class="sec" aria-labelledby="h-prod">
+      <div class="sec__head">
+        <h2 id="h-prod">Production</h2>
+        <p class="sec__desc">Where it is made, in which language, and by whom.</p>
       </div>
-      <div class="row">
-        <label>Main production country <select name="main_country" id="country"></select></label>
-        <label>Other countries <span class="opt">(optional)</span>
-          <select id="other_countries" multiple size="4"></select></label>
-      </div>
-      <div class="row">
-        <label>Production companies
-          <input type="number" name="n_production_companies" min="1" max="30" value="2"></label>
-        <label>Spoken languages
-          <input type="number" name="n_spoken_languages" min="1" max="12" value="1"></label>
-        <label class="check"><input type="checkbox" name="major_studio"> Major studio involved</label>
+      <div class="fields">
+        <label class="field"><span class="field__label">Original language</span>
+          <select name="original_language" id="language"></select></label>
+        <label class="field"><span class="field__label">Main production country</span>
+          <select name="main_country" id="country"></select></label>
+        <div class="field field--wide"><label class="field__label" for="add_country">Other countries <em>optional</em></label>
+          <select id="add_country"><option value="">Add a country…</option></select>
+          <div class="tags" id="other_tags"></div></div>
+        <label class="field"><span class="field__label">Production companies</span>
+          <input type="number" name="n_production_companies" min="1" max="30" value="2" inputmode="numeric"></label>
+        <label class="field"><span class="field__label">Spoken languages</span>
+          <input type="number" name="n_spoken_languages" min="1" max="12" value="1" inputmode="numeric"></label>
+        <label class="check field--wide"><input type="checkbox" name="major_studio">
+          <span class="check__box" aria-hidden="true"></span>
+          <span>A major studio is involved <em>Disney, Warner, Universal, Sony, Paramount…</em></span></label>
       </div>
     </section>
 
-    <div id="error" class="error" role="alert" hidden></div>
-    <button type="submit" id="submit">Predict rating</button>
+    <div class="actions">
+      <div id="error" class="alert" role="alert" hidden>
+        <strong>Please check this input</strong><span id="error-text"></span>
+      </div>
+      <button type="submit" id="submit" class="btn"><span class="btn__spin" aria-hidden="true"></span><span class="btn__text">Predict rating</span></button>
+    </div>
   </form>
 
-  <aside id="result" class="card result" aria-live="polite">
-    <div id="placeholder" class="placeholder">
-      <p class="big">?</p>
-      <p>Fill in the film's details and press <strong>Predict rating</strong>.</p>
-      <p class="hint" id="modelinfo"></p>
+  <aside id="result" class="result" aria-live="polite" aria-busy="false">
+    <div id="placeholder" class="empty">
+      <p class="eyebrow">Your forecast</p>
+      <p class="empty__num" aria-hidden="true">—<span>/ 10</span></p>
+      <p class="empty__text">Describe the film on the left and press <strong>Predict rating</strong>.
+        You will see the expected rating, a likely range and what drives it.</p>
+      <ol class="empty__steps">
+        <li>Pick a release date, runtime and up to three genres</li>
+        <li>Add the director and lead cast if they are known</li>
+        <li>Press Predict rating</li>
+      </ol>
     </div>
+
     <div id="output" hidden>
-      <p class="label" id="out-title"></p>
-      <p class="score"><span id="score"></span><span class="of">/10</span></p>
-      <p class="interval">80% of similar films land between <strong id="lo"></strong> and <strong id="hi"></strong></p>
-      <svg id="scale" viewBox="0 0 300 46" role="img" aria-label="Predicted rating on a 1 to 10 scale"></svg>
-      <h3>What drives this prediction</h3>
-      <p class="hint">Change in predicted rating compared with a neutral value for each input
-        (e.g. an unknown director).</p>
-      <svg id="drivers" role="img" aria-label="Effect of each input on the prediction"></svg>
+      <p class="eyebrow" id="out-title">Predicted IMDb rating</p>
+      <div class="score">
+        <span id="score" class="score__num"></span><span class="score__of">/ 10</span>
+        <span id="verdict" class="verdict"></span>
+      </div>
+
+      <div class="range">
+        <div class="range__track" id="range-track">
+          <span class="range__band" id="range-band"></span>
+          <span class="range__mark" id="range-mark"></span>
+        </div>
+        <div class="range__ticks" aria-hidden="true"><span>1</span><span>4</span><span>7</span><span>10</span></div>
+        <p class="range__text"><strong>80% range: <span id="lo"></span> to <span id="hi"></span></strong>
+          Comparable films land here about 4 times in 5.</p>
+      </div>
+
+      <div class="block">
+        <h3>What drives this forecast</h3>
+        <p class="block__desc">Points each input adds or removes, compared with a neutral film
+          (unknown people, no genre, 103 minutes, no budget, English, US).</p>
+        <svg id="drivers" class="drivers" role="img" aria-label="Effect of each input on the prediction"></svg>
+        <p class="block__desc idle" id="drivers-idle"></p>
+      </div>
+
+      <div class="block" id="records-block" hidden>
+        <h3>Track records used</h3>
+        <dl class="records" id="records"></dl>
+      </div>
+      <p class="note">The model is least accurate for very weak or exceptional films and cannot
+        foresee hype or review-bombing.</p>
     </div>
   </aside>
 </main>
 
-<footer class="wrap foot">
-  <p>CT-378 Machine Learning project. Information courtesy of IMDb (https://www.imdb.com), used with
-    permission for non-commercial use. This product uses the TMDB API but is not endorsed or
-    certified by TMDB.</p>
+<footer class="footer">
+  <div class="wrap">
+    <p>Information courtesy of IMDb (https://www.imdb.com). Used with permission, non-commercial.
+      This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p>CineScore is a CT-378 Machine Learning course project. Forecasts are estimates, not guarantees.</p>
+  </div>
 </footer>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
