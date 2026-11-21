@@ -72,4 +72,7 @@ reports/    figures and final report
 ## Credits
 
 - Information courtesy of IMDb (https://www.imdb.com). Used with permission (non-commercial).
+  `app/data/lookups.json.gz` contains only aggregated per-person averages (previous-film mean
+  rating and count per director, writer, cast member and franchise) derived from the IMDb
+  non-commercial datasets; it does not contain raw IMDb data.
 - This product uses the TMDB API but is not endorsed or certified by TMDB.
