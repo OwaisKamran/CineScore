@@ -67,7 +67,9 @@ Deployments, from the options in the course guidelines:
    repository, branch `main`, main file `streamlit_app/streamlit_app.py`, and Python 3.12 under
    *Advanced settings*. Cloud reads the theme from `.streamlit/config.toml` in the repository root.
 3. **Hugging Face model repo** with the pipeline and model card (`huggingface/model_card.md`), and a
-   **Space** that runs the Streamlit app in Docker (`huggingface/space/`). Both are uploaded by:
+   **static Space** that runs the same Streamlit app entirely in the browser with
+   [stlite](https://github.com/whitphx/stlite) (Streamlit on Pyodide; `huggingface/space/index.html`).
+   Both are uploaded by:
 
    ```bash
    pip install "huggingface_hub[cli]"
@@ -75,9 +77,10 @@ Deployments, from the options in the course guidelines:
    python scripts/06_publish_huggingface.py     # model repo + Space under the logged-in account
    ```
 
-   Hugging Face no longer offers a built-in Streamlit SDK (Streamlit runs through Docker), and Docker
-   or Gradio Spaces on the free CPU tier now need a PRO subscription. The Space files are ready and
-   tested locally; they will be published once a PRO account is available.
+   Static Spaces are free (Docker/Gradio Spaces on the free tier need PRO). The model is saved with
+   scikit-learn 1.8.0, the version Pyodide 314 ships, so the same file runs in all three deployments.
+   In the browser the people search uses Streamlit's built-in widgets (search box + list of matches)
+   because custom components cannot load there; the first visit takes about a minute to start.
 
 ## Repository layout
 
@@ -89,7 +92,7 @@ models/     saved joblib pipeline
 app/        Flask app (index.py, predictor.py, templates/, static/, model/, data/)
 streamlit_app/  Streamlit app for Streamlit Community Cloud (streamlit_app.py, streamlit.css, requirements.txt)
 .streamlit/ Streamlit theme (config.toml)
-huggingface/    model card and Hugging Face Space files (Dockerfile, README)
+huggingface/    model card and Hugging Face Space files (stlite index.html, README)
 reports/    figures and final report
 ```
 
@@ -98,7 +101,7 @@ reports/    figures and final report
 - Local Flask app: `python app/index.py` → http://localhost:5000
 - Streamlit Community Cloud: https://cinescore-ml.streamlit.app
 - Hugging Face model repo (pipeline + model card): https://huggingface.co/OwaisKamran/cinescore
-- Hugging Face Space: pending (needs a PRO account; files in `huggingface/space/`)
+- Hugging Face Space (runs in the browser with stlite): ready and tested locally, upload pending
 
 ## Credits
 

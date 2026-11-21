@@ -70,6 +70,8 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecor
   border-radius: 0 !important; }
 .stApp [data-baseweb="tag"] span, .stApp [data-tag] * { color: var(--cs-ink) !important; }
 [data-baseweb="popover"] ul { background: var(--cs-bg) !important; border: 1px solid var(--cs-ink); border-radius: 0; }
+/* pop-up lists are attached to the page body, outside .stApp (e.g. stSelectboxVirtualDropdown in the browser Space) */
+body, [data-baseweb="popover"] *, [data-testid="stSelectboxVirtualDropdown"] * { font-family: var(--cs-sans) !important; }
 [data-baseweb="popover"] li:hover, [data-baseweb="popover"] li[aria-selected="true"] { background: var(--cs-hover) !important; }
 
 /* genres + story elements: aligned grid of square checkboxes */

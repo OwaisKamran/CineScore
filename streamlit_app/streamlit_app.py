@@ -19,10 +19,15 @@ from pathlib import Path
 
 import streamlit as st
 
-try:  # one-box autocomplete; falls back to search box + pick list if the component is missing
-    from streamlit_searchbox import st_searchbox
-except ImportError:  # pragma: no cover
-    st_searchbox = None
+# In the browser (stlite on Pyodide, the Hugging Face Space) custom components cannot load their
+# frontend, so the app uses a built-in search box + match list there instead of streamlit-searchbox.
+IN_BROWSER = sys.platform == "emscripten"
+st_searchbox = None
+if not IN_BROWSER:
+    try:  # one-box autocomplete
+        from streamlit_searchbox import st_searchbox
+    except ImportError:  # pragma: no cover
+        st_searchbox = None
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "app"))
@@ -128,22 +133,11 @@ def people_picker(role: str, title: str) -> list[str]:
     """Type in one box, suggestions appear under it, click (or arrow + Enter) to add a name."""
     picks = st.session_state.setdefault(f"picks_{role}", [])
     limit = ROLE_LIMITS[role]
-    if st_searchbox is None:
-        return _fallback_picker(role, title, limit)
-
-    def search(q: str) -> list:
-        return [(_suggestion(r), r) for r in P.search(role, q)] if len(q.strip()) >= 2 else []
-
-    def add(r) -> None:
-        cur = st.session_state[f"picks_{role}"]
-        if isinstance(r, dict) and r["id"] not in {p["id"] for p in cur} and len(cur) < limit:
-            cur.append(r)
-
     html(f'<p class="cs-label cs-label--box">{title}</p>')
-    with st.container(key=f"sbwrap_{role}"):
-        st_searchbox(search, placeholder="e.g. Toy Story" if role == "franchise" else "Search a name…",
-                     key=f"sb_{role}", clear_on_submit=True, submit_function=add, debounce=150,
-                     style_overrides=SEARCHBOX_STYLE)
+    if st_searchbox is None:
+        _fallback_box(role, limit)
+    else:
+        _searchbox(role, limit)
     if picks:
         with st.container(key=f"tags_{role}", horizontal=True):
             for p in picks:
@@ -153,15 +147,44 @@ def people_picker(role: str, title: str) -> list[str]:
     return [p["id"] for p in picks]
 
 
-def _fallback_picker(role: str, title: str, limit: int) -> list[str]:
-    labels = st.session_state.setdefault(f"labels_{role}", {})
-    chosen = st.session_state.get(f"ms_{role}", [])
-    q = st.text_input(title, key=f"q_{role}", placeholder="Type at least 2 letters, then pick below")
-    for r in P.search(role, q) if q else []:
-        labels[r["id"]] = _suggestion(r)
-    options = list(dict.fromkeys(chosen + list(labels)))
-    return st.multiselect(title, options, key=f"ms_{role}", format_func=lambda i: labels.get(i, i),
-                          max_selections=limit, label_visibility="collapsed")
+def _add_person(role: str, limit: int, person: dict) -> None:
+    cur = st.session_state[f"picks_{role}"]
+    if isinstance(person, dict) and person["id"] not in {p["id"] for p in cur} and len(cur) < limit:
+        cur.append(person)
+
+
+def _searchbox(role: str, limit: int) -> None:
+    """streamlit-searchbox: type in one box, suggestions appear under it, pick one."""
+    def search(q: str) -> list:
+        return [(_suggestion(r), r) for r in P.search(role, q)] if len(q.strip()) >= 2 else []
+
+    with st.container(key=f"sbwrap_{role}"):
+        st_searchbox(search, placeholder="e.g. Toy Story" if role == "franchise" else "Search a name…",
+                     key=f"sb_{role}", clear_on_submit=True, debounce=150, style_overrides=SEARCHBOX_STYLE,
+                     submit_function=lambda r: _add_person(role, limit, r))
+
+
+def _pick_match(role: str, limit: int) -> None:
+    pid = st.session_state.get(f"pick_{role}")
+    if pid:
+        _add_person(role, limit, st.session_state[f"hits_{role}"][pid])
+    st.session_state[f"pick_{role}"] = None
+    st.session_state[f"q_{role}"] = ""
+
+
+def _fallback_box(role: str, limit: int) -> None:
+    """Built-in widgets only (used in the browser Space): search box, then a list of matches to pick from."""
+    q = st.text_input("Search", key=f"q_{role}", label_visibility="collapsed",
+                      placeholder="e.g. Toy Story" if role == "franchise" else "Search a name…")
+    hits = P.search(role, q) if q and len(q.strip()) >= 2 else []
+    if hits:
+        st.session_state[f"hits_{role}"] = {h["id"]: h for h in hits}
+        st.selectbox("Matches", list(st.session_state[f"hits_{role}"]), index=None, key=f"pick_{role}",
+                     label_visibility="collapsed", placeholder=f"{len(hits)} match{'es' if len(hits) > 1 else ''}: pick one",
+                     format_func=lambda i: _suggestion(st.session_state[f"hits_{role}"][i]),
+                     on_change=_pick_match, args=(role, limit))
+    elif q and len(q.strip()) >= 2:
+        html('<p class="cs-hint">No matches. Check the spelling, or leave this empty for a debut.</p>')
 
 
 # ---------------------------------------------------------------- charts (same geometry as app/static/app.js)
@@ -484,6 +507,7 @@ def clear_form() -> None:
         st.session_state[k] = list(v) if isinstance(v, list) else v
     for role in ROLE_LIMITS:
         st.session_state[f"picks_{role}"] = []
+        st.session_state[f"q_{role}"] = ""
         if isinstance(st.session_state.get(f"sb_{role}"), dict):
             st.session_state[f"sb_{role}"]["result"] = None
     st.session_state.pop("last", None)
