@@ -1,7 +1,6 @@
 """CineScore Flask app.
 
 Local:   python app/index.py            -> http://localhost:5000
-Vercel:  deploy the app/ folder (see app/vercel.json); Vercel serves the `app` object.
 
 Endpoints
   GET  /                 HTML front end

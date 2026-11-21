@@ -46,10 +46,11 @@ python app/index.py        # open http://localhost:5000
 `POST /predict` takes a JSON description of the film and returns the predicted rating, an 80%
 interval and the per-input effects; invalid input returns HTTP 400 with a readable message.
 
-## Deploy to Vercel
+## Deployment
 
-The `app/` folder is self-contained (model, lookups, `requirements.txt`, `vercel.json`).
-In Vercel: *Add New → Project → import the GitHub repo → Root Directory = `app`* → Deploy.
+The `app/` folder is self-contained (model, lookups, `requirements.txt`). Planned deployments,
+from the options in the course guidelines: Streamlit Community Cloud and a Hugging Face Space
+(with a model card), plus the local Flask app.
 
 ## Repository layout
 
@@ -65,7 +66,8 @@ reports/    figures and final report
 ## Deployment links
 
 - Local Flask app: `python app/index.py` → http://localhost:5000
-- Vercel: _TBD_
+- Streamlit Community Cloud: _TBD_
+- Hugging Face Space: _TBD_
 
 ## Credits
 

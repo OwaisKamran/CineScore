@@ -5,3 +5,10 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 *.part
+
+# Secrets and local environments
+.env
+.env.*
+*.env
+venv/
+env/
