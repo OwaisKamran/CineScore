@@ -101,7 +101,7 @@ reports/    figures and final report
 - Local Flask app: `python app/index.py` → http://localhost:5000
 - Streamlit Community Cloud: https://cinescore-ml.streamlit.app
 - Hugging Face model repo (pipeline + model card): https://huggingface.co/OwaisKamran/cinescore
-- Hugging Face Space (runs in the browser with stlite): ready and tested locally, upload pending
+- Hugging Face Space (runs in the browser with stlite): https://huggingface.co/spaces/OwaisKamran/cinescore
 
 ## Credits
 

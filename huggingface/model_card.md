@@ -27,7 +27,9 @@ director, writers, lead cast and franchise.
 
 - **Model:** `HistGradientBoostingRegressor` inside a `Pipeline` (imputation, one-hot encoding and
   scaling are fitted on the training years only)
-- **Live demo:** [Space: {user}/cinescore](https://huggingface.co/spaces/{user}/cinescore)
+- **Live demo:** [Space: {user}/cinescore](https://huggingface.co/spaces/{user}/cinescore), the Streamlit app
+  running in your browser with stlite (first load takes about a minute)
+- **Also deployed:** Streamlit Community Cloud at <https://cinescore-ml.streamlit.app>
 - **Code, data scripts and notebooks:** <https://github.com/OwaisKamran/CineScore>
 - CT-378 Machine Learning course project.
 
@@ -60,7 +62,7 @@ lo, hi = pred + meta["interval_80"][0], pred + meta["interval_80"][1]
 
 Building the 57 features by hand is tedious; the GitHub repo's `app/predictor.py` turns a plain film
 description (title, date, genres, names, ...) into the feature row, validates it, and also explains the
-prediction. The Space runs exactly that code.
+prediction. The Space and both web apps run exactly that code with this file.
 
 ## Training data
 
