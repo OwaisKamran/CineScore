@@ -14,7 +14,3 @@ __pycache__/
 *.env
 venv/
 env/
-
-# Local notes and tool settings (kept on this PC, not in the repo)
-CLAUDE.md
-.claude/
