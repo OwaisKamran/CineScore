@@ -23,7 +23,7 @@ CERTIFICATIONS = ["G", "PG", "PG-13", "R", "NC-17", "NR"]
 KEYWORDS = {
     "kw_based_on_novel": "Based on a novel or book",
     "kw_based_on_true_story": "Based on a true story",
-    "kw_biography": "Biography",
+    "kw_biography": "Life story of a real person",
     "kw_superhero": "Superhero",
     "kw_remake": "Remake",
     "kw_sequel": "Sequel",

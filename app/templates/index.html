@@ -13,6 +13,7 @@
 </head>
 <body>
 <header class="masthead">
+  <div class="filmstrip" aria-hidden="true"></div>
   <div class="wrap masthead__in">
     <h1 class="brand">CineScore</h1>
     <p class="tagline">Forecast a film's IMDb rating before it opens.</p>
@@ -22,6 +23,13 @@
 
 <main class="wrap layout">
   <form id="form" class="sheet" novalidate>
+    <div class="formbar">
+      <p>Fill the form with a sample film, or start again.</p>
+      <div class="formbar__btns">
+        <button type="button" class="btn btn--ghost" id="example">Try an example film</button>
+        <button type="button" class="btn btn--ghost" id="clear">Clear form</button>
+      </div>
+    </div>
     <section class="sec" aria-labelledby="h-film">
       <div class="sec__head">
         <h2 id="h-film">Film details</h2>
@@ -33,10 +41,11 @@
         <label class="field"><span class="field__label">Release date</span>
           <input type="date" name="release_date" required min="1980-01-01" max="2035-12-31"></label>
         <label class="field"><span class="field__label">Runtime <em>minutes</em></span>
-          <input type="number" name="runtime" required min="60" max="240" value="110" inputmode="numeric"></label>
+          <input type="number" name="runtime" required min="60" max="240" placeholder="e.g. 110" inputmode="numeric"></label>
         <label class="field"><span class="field__label">Budget <em>US$, optional</em></span>
-          <input type="number" name="budget_usd" min="10000" max="1000000000" step="1000"
-                 placeholder="e.g. 40000000" inputmode="numeric"></label>
+          <input type="text" name="budget_usd" id="budget" inputmode="numeric" autocomplete="off"
+                 placeholder="e.g. 40,000,000" aria-describedby="budget-help">
+          <span class="field__help" id="budget-help">Leave empty if unknown.</span></label>
         <label class="field"><span class="field__label">US certification</span>
           <select name="us_certification" id="cert"><option value="">Not rated yet</option></select></label>
       </div>
@@ -63,7 +72,7 @@
         <div class="field ac" data-role="franchise" data-max="1"><span class="field__label">Franchise <em>if a sequel</em></span></div>
       </div>
       <fieldset class="group">
-        <legend class="field__label">Lead role</legend>
+        <legend class="field__label">Lead role <em>default: Not sure</em></legend>
         <div class="segmented">
           <label><input type="radio" name="female_lead" value="unknown" checked><span>Not sure</span></label>
           <label><input type="radio" name="female_lead" value="no"><span>Male</span></label>
@@ -79,15 +88,15 @@
       </div>
       <div class="fields">
         <label class="field"><span class="field__label">Original language</span>
-          <select name="original_language" id="language"></select></label>
+          <select name="original_language" id="language"><option value="">Choose a language…</option></select></label>
         <label class="field"><span class="field__label">Main production country</span>
-          <select name="main_country" id="country"></select></label>
+          <select name="main_country" id="country"><option value="">Choose a country…</option></select></label>
         <div class="field field--wide"><label class="field__label" for="add_country">Other countries <em>optional</em></label>
           <select id="add_country"><option value="">Add a country…</option></select>
           <div class="tags" id="other_tags"></div></div>
-        <label class="field"><span class="field__label">Production companies</span>
+        <label class="field"><span class="field__label">Production companies <em>default: 2</em></span>
           <input type="number" name="n_production_companies" min="1" max="30" value="2" inputmode="numeric"></label>
-        <label class="field"><span class="field__label">Spoken languages</span>
+        <label class="field"><span class="field__label">Spoken languages <em>default: 1</em></span>
           <input type="number" name="n_spoken_languages" min="1" max="12" value="1" inputmode="numeric"></label>
         <label class="check field--wide"><input type="checkbox" name="major_studio">
           <span class="check__box" aria-hidden="true"></span>
@@ -108,12 +117,12 @@
       <p class="eyebrow">Your forecast</p>
       <p class="empty__num" aria-hidden="true">—<span>/ 10</span></p>
       <p class="empty__text">Describe the film on the left and press <strong>Predict rating</strong>.
-        You will see the expected rating, a likely range and what drives it.</p>
-      <ol class="empty__steps">
-        <li>Pick a release date, runtime and up to three genres</li>
-        <li>Add the director and lead cast if they are known</li>
-        <li>Press Predict rating</li>
-      </ol>
+        You will see the expected rating, a likely range, how it compares and what drives it.</p>
+      <div class="block">
+        <h3>How films are rated</h3>
+        <p class="block__desc" id="hist-empty-desc"></p>
+        <svg id="hist-empty" class="chart" role="img" aria-label="Distribution of IMDb ratings"></svg>
+      </div>
     </div>
 
     <div id="output" hidden>
@@ -124,26 +133,30 @@
       </div>
 
       <div class="range">
-        <div class="range__track" id="range-track">
-          <span class="range__band" id="range-band"></span>
-          <span class="range__mark" id="range-mark"></span>
-        </div>
-        <div class="range__ticks" aria-hidden="true"><span>1</span><span>4</span><span>7</span><span>10</span></div>
+        <svg id="scale" class="chart" role="img" aria-label="Predicted rating and 80% range on a 1 to 10 scale"></svg>
         <p class="range__text"><strong>80% range: <span id="lo"></span> to <span id="hi"></span></strong>
           Comparable films land here about 4 times in 5.</p>
+      </div>
+
+      <div class="block">
+        <h3>How it compares</h3>
+        <p class="block__desc">This forecast next to the average rating of the people's earlier films
+          and of films in the same genres.</p>
+        <svg id="compare" class="chart" role="img" aria-label="Forecast compared with track records and genre averages"></svg>
+      </div>
+
+      <div class="block">
+        <h3>Among all films</h3>
+        <p class="block__desc" id="hist-desc"></p>
+        <svg id="hist" class="chart" role="img" aria-label="Where this forecast sits among all films' ratings"></svg>
       </div>
 
       <div class="block">
         <h3>What drives this forecast</h3>
         <p class="block__desc">Points each input adds or removes, compared with a neutral film
           (unknown people, no genre, 103 minutes, no budget, English, US).</p>
-        <svg id="drivers" class="drivers" role="img" aria-label="Effect of each input on the prediction"></svg>
+        <svg id="drivers" class="chart" role="img" aria-label="Effect of each input on the prediction"></svg>
         <p class="block__desc idle" id="drivers-idle"></p>
-      </div>
-
-      <div class="block" id="records-block" hidden>
-        <h3>Track records used</h3>
-        <dl class="records" id="records"></dl>
       </div>
       <p class="note">The model is least accurate for very weak or exceptional films and cannot
         foresee hype or review-bombing.</p>

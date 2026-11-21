@@ -22,7 +22,7 @@ NAME = "cinescore"
 # Everything the Streamlit app needs at run time; nothing else from the repo goes into the Space.
 SPACE_FILES = [".streamlit/config.toml", "streamlit_app/streamlit_app.py", "streamlit_app/streamlit.css",
                "streamlit_app/requirements.txt", "app/predictor.py", "app/static/tokens.css",
-               "app/data/lookups.json.gz", "app/data/country_names.json",
+               "app/data/lookups.json.gz", "app/data/country_names.json", "app/data/rating_stats.json",
                "app/model/cinescore_pipeline.joblib", "app/model/metadata.json"]
 
 

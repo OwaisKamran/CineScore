@@ -18,7 +18,9 @@
   --cs-faint: #767674;
   --cs-rule: 1px solid #111111;
   --cs-rule-double: 3px double #111111;
-  --cs-rule-heavy: 4px solid #111111;
+
+  /* header graphic: a black film strip with sprocket holes and light frames (one 52 x 26 tile) */
+  --cs-filmstrip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='26'%3E%3Crect width='52' height='26' fill='%23111'/%3E%3Cg fill='%23fff'%3E%3Crect x='3' y='3' width='5' height='3.5' rx='1'/%3E%3Crect x='16' y='3' width='5' height='3.5' rx='1'/%3E%3Crect x='29' y='3' width='5' height='3.5' rx='1'/%3E%3Crect x='42' y='3' width='5' height='3.5' rx='1'/%3E%3Crect x='3' y='19.5' width='5' height='3.5' rx='1'/%3E%3Crect x='16' y='19.5' width='5' height='3.5' rx='1'/%3E%3Crect x='29' y='19.5' width='5' height='3.5' rx='1'/%3E%3Crect x='42' y='19.5' width='5' height='3.5' rx='1'/%3E%3C/g%3E%3Crect x='2' y='9' width='48' height='8' fill='%23f2f2f0'/%3E%3C/svg%3E");
 
   /* the one accent */
   --cs-accent: #1f4d3a;

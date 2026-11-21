@@ -7,9 +7,12 @@ Endpoints
   GET  /api/options      choices for the form (genres, languages, countries, ...)
   GET  /api/search       ?role=director|writer|cast|franchise&q=nol  -> name matches
   POST /predict          JSON film description -> predicted IMDb rating + 80% interval
+  GET  /api/stats        rating distribution and genre averages for the context charts
   GET  /health           liveness check
 """
+import json
 import os
+from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
@@ -20,6 +23,7 @@ except ImportError:  # imported as a package (python -m app.index)
 
 app = Flask(__name__)
 predictor = Predictor()
+STATS = json.loads((Path(__file__).resolve().parent / "data" / "rating_stats.json").read_text(encoding="utf-8"))
 
 
 @app.get("/")
@@ -52,6 +56,11 @@ def predict():
     except Exception:  # never leak stack traces to the browser
         app.logger.exception("prediction failed")
         return jsonify(error="Something went wrong while predicting. Please try again."), 500
+
+
+@app.get("/api/stats")
+def stats():
+    return jsonify(STATS)
 
 
 @app.get("/health")
