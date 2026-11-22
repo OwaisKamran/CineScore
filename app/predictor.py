@@ -9,7 +9,10 @@ from __future__ import annotations
 import gzip
 import json
 import math
+import unicodedata
+from bisect import bisect_right
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 
 import joblib
@@ -49,8 +52,72 @@ class ValidationError(ValueError):
     """Raised for bad user input; message is safe to show to the user."""
 
 
+def fold(s: str) -> str:
+    """Lower case without accents, so 'almodovar' finds 'Almodóvar'."""
+    s = s.lower()
+    if s.isascii():
+        return s
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
+class NameIndex:
+    """Prefix index over one role's names, built once at start-up.
+
+    Rows are sorted by number of earlier films (most first). For every word of every name the
+    index maps its first 2 and first 3 letters to the rows that have such a word, already in that
+    order. A query looks up the first letters of its first word and checks only those rows:
+    first names that start with the query, then names where a later word does. Only when that
+    finds nothing does it fall back to a plain substring scan (old behaviour, e.g. "olan").
+    """
+
+    def __init__(self, rows: list):
+        self.rows = rows
+        self.names = [fold(r[1]) for r in rows]
+        index: dict[str, list[int]] = {}
+        for k, name in enumerate(self.names):
+            for key in {w[:n] for w in name.split() for n in (2, 3) if len(w) >= n}:
+                index.setdefault(key, []).append(k)
+        self.index = index
+        self._text = self._starts = None  # substring fallback, built on first use
+
+    def find(self, q: str, limit: int) -> list[int]:
+        first = q.split(" ", 1)[0]
+        cands = self.index.get(first[:3], ()) if len(first) >= 2 else None
+        if cands is None:  # one-letter first word ("j abrams"): use the fallback
+            return self._scan(q, limit)
+        names, out = self.names, []
+        for k in cands:  # the name starts with the query
+            if names[k].startswith(q):
+                out.append(k)
+                if len(out) == limit:
+                    return out
+        word, seen = " " + q, set(out)
+        for k in cands:  # a later word starts with the query
+            if k not in seen and word in names[k]:
+                out.append(k)
+                if len(out) == limit:
+                    break
+        return out or self._scan(q, limit)
+
+    def _scan(self, q: str, limit: int) -> list[int]:
+        if self._text is None:
+            self._starts, pos = [], 1
+            for n in self.names:
+                self._starts.append(pos)
+                pos += len(n) + 1
+            self._text = "\n" + "\n".join(self.names) + "\n"
+        text, starts, out = self._text, self._starts, []
+        i = text.find(q)
+        while i != -1 and len(out) < limit:
+            k = bisect_right(starts, i) - 1
+            out.append(k)
+            i = text.find(q, starts[k + 1] - 1 if k + 1 < len(starts) else len(text))
+        return out
+
+
 class Predictor:
-    def __init__(self, model_dir: Path = MODEL_DIR, lookups: Path = HERE / "data" / "lookups.json.gz"):
+    def __init__(self, model_dir: Path = MODEL_DIR, lookups: Path = HERE / "data" / "lookups.json.gz",
+                 demo: Path = HERE / "data" / "demo_2026.json"):
         self.pipe = joblib.load(model_dir / "cinescore_pipeline.joblib")
         self.meta = json.loads((model_dir / "metadata.json").read_text())
         self.num = self.meta["features_numeric"]
@@ -66,9 +133,23 @@ class Predictor:
         with gzip.open(lookups, "rt", encoding="utf-8") as f:
             raw = json.load(f)
         self.people = {role: {str(r[0]): r for r in raw[role]} for role in ROLE_LIMITS}
-        self.search_index = {
-            role: sorted(((r[1].lower(), r) for r in raw[role]), key=lambda t: -t[1][4])
-            for role in ROLE_LIMITS}
+        # most earlier films first (stable, so ties keep the file order, as before)
+        self.search_index = {role: NameIndex(sorted(raw[role], key=lambda r: -r[4])) for role in ROLE_LIMITS}
+        self._search = lru_cache(maxsize=4096)(self._search_uncached)
+
+        # Real 2026 films for the demo. Their directors and writers get their own IDs whose track
+        # record uses only films from before the film's year (the training rule), because the
+        # regular lookups already include 2026 films and so the film's own rating.
+        self.demo = None
+        if demo.exists():
+            self.demo = json.loads(demo.read_text(encoding="utf-8"))
+            for film in self.demo["films"]:
+                for role, people in film["people"].items():
+                    for p in people:
+                        if p["id"] not in self.people[role]:
+                            self.people[role][p["id"]] = [p["id"], p["name"], p.get("birth_year"),
+                                                          p["prev_mean"] or 0.0, p["prev_count"],
+                                                          p.get("last_title"), p.get("last_year")]
 
     # ------------------------------------------------------------------ options / search
     def options(self) -> dict:
@@ -85,18 +166,18 @@ class Predictor:
     def search(self, role: str, q: str, limit: int = 8) -> list[dict]:
         if role not in self.search_index:
             raise ValidationError(f"Unknown role '{role}'.")
-        q = (q or "").strip().lower()
+        q = " ".join(fold(q or "").split())
         if len(q) < 2:
             return []
-        starts, contains = [], []
-        for name, r in self.search_index[role]:
-            if name.startswith(q):
-                starts.append(r)
-            elif q in name:
-                contains.append(r)
-            if len(starts) >= limit:
-                break
-        return [self._person(r) for r in (starts + contains)[:limit]]
+        rows = self.search_index[role].rows
+        return [self._person(rows[k]) for k in self._search(role, q, limit)]
+
+    def _search_uncached(self, role: str, q: str, limit: int) -> tuple:
+        return tuple(self.search_index[role].find(q, limit))
+
+    def demo_films(self) -> list[dict]:
+        """The real 2026 films (pre-release inputs + actual rating), or [] if the file is missing."""
+        return self.demo["films"] if self.demo else []
 
     @staticmethod
     def _person(r) -> dict:

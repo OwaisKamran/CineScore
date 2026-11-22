@@ -35,8 +35,9 @@
   --cs-danger: #9b1c1c;
   --cs-danger-soft: rgba(155, 28, 28, .05);
 
-  /* checkbox tick (white, drawn on a black box) */
+  /* checkbox tick (white, drawn on a black box) and the select arrow */
   --cs-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.6 5.2l2.2 2.2L8.5 2.5' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E");
+  --cs-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%23333' stroke-width='1.4'/%3E%3C/svg%3E");
 
   /* type */
   --cs-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -47,3 +48,29 @@
   --cs-ease: 120ms ease;
 }
 @media (max-width: 640px) { :root { --cs-gutter: 16px; --cs-score-size: 112px; } }
+
+/* Night mode: near-black paper, off-white ink, the same green lightened for contrast.
+   Flask sets data-theme="dark" on the html element; the Streamlit app adds a .cs-theme-dark marker.
+   Every colour above is replaced here, so text, rules, inputs and the charts all follow. */
+:root[data-theme="dark"], :root:has(.cs-theme-dark) {
+  color-scheme: dark;
+  --cs-bg: #121211;
+  --cs-hover: #1f1f1d;
+  --cs-track: #1c1c1a;
+  --cs-line: #353532;
+  --cs-line-strong: #74746f;
+  --cs-ink: #ecebe5;
+  --cs-muted: #bebdb6;
+  --cs-faint: #96958e;
+  --cs-rule: 1px solid #ecebe5;
+  --cs-rule-double: 3px double #ecebe5;
+  --cs-accent: #7cc4a0;
+  --cs-accent-strong: #9bd5b8;
+  --cs-on-accent: #0e1d15;
+  --cs-up: #7cc4a0;
+  --cs-down: #7a7a75;
+  --cs-danger: #ff8f85;
+  --cs-danger-soft: rgba(255, 143, 133, .09);
+  --cs-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.6 5.2l2.2 2.2L8.5 2.5' fill='none' stroke='%23121211' stroke-width='1.6'/%3E%3C/svg%3E");
+  --cs-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%23cfcec8' stroke-width='1.4'/%3E%3C/svg%3E");
+}

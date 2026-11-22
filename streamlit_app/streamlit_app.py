@@ -8,7 +8,13 @@ Reuses the saved scikit-learn pipeline (app/model/) and the name lookups (app/da
 same Predictor class as the Flask app, so both front ends validate and predict identically.
 Colours and fonts come from app/static/tokens.css and the charts use the same geometry as
 app/static/app.js, so both apps look the same.
+
+Speed: the form is a fragment (changing an input reruns only the form, not the result column)
+and each people box is a nested fragment (typing reruns only that box). Only Predict, the
+example / demo / clear buttons and the theme switch rerun the whole page.
 """
+import gc
+import inspect
 import json
 import math
 import re
@@ -19,16 +25,6 @@ from pathlib import Path
 
 import streamlit as st
 
-# In the browser (stlite on Pyodide, the Hugging Face Space) custom components cannot load their
-# frontend, so the app uses a built-in search box + match list there instead of streamlit-searchbox.
-IN_BROWSER = sys.platform == "emscripten"
-st_searchbox = None
-if not IN_BROWSER:
-    try:  # one-box autocomplete
-        from streamlit_searchbox import st_searchbox
-    except ImportError:  # pragma: no cover
-        st_searchbox = None
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "app"))
 from predictor import CERTIFICATIONS, KEYWORDS, LANGUAGE_NAMES, ROLE_LIMITS, Predictor, ValidationError  # noqa: E402
@@ -36,29 +32,46 @@ from predictor import CERTIFICATIONS, KEYWORDS, LANGUAGE_NAMES, ROLE_LIMITS, Pre
 st.set_page_config(page_title="CineScore", page_icon=":material/movie:", layout="wide",
                    initial_sidebar_state="collapsed", menu_items={})
 
+# The people boxes list matches while you type (commit after a 200 ms pause). Streamlit versions
+# without `live` (an older browser build) list them after Enter instead.
+LIVE = {"live": "200ms"} if "live" in inspect.signature(st.text_input).parameters else {}
+REQUIRED = {"required": True} if "required" in inspect.signature(st.segmented_control).parameters else {}
+ASSETS = [ROOT / "app" / "static" / "tokens.css", Path(__file__).parent / "streamlit.css",
+          ROOT / "app" / "data" / "country_names.json", ROOT / "app" / "data" / "rating_stats.json"]
+
 
 @st.cache_resource(show_spinner="Loading the model…")
 def load_predictor() -> Predictor:
-    return Predictor()
+    p = Predictor()
+    # Streamlit runs a full garbage collection after every rerun; with the model and ~226,000 names
+    # loaded that took ~160 ms each time. These objects live for the whole session, so move them
+    # out of the collector's way (gc.freeze): every rerun and keystroke is that much faster.
+    gc.collect()
+    gc.freeze()
+    return p
 
 
-def load_assets() -> tuple[str, dict, dict]:  # small files; read each run so CSS edits apply live
-    css = (ROOT / "app" / "static" / "tokens.css").read_text(encoding="utf-8")
-    css += (Path(__file__).parent / "streamlit.css").read_text(encoding="utf-8")
-    data = ROOT / "app" / "data"
-    names = json.loads((data / "country_names.json").read_text(encoding="utf-8"))
-    stats = json.loads((data / "rating_stats.json").read_text(encoding="utf-8"))
-    return css, names, stats
+@st.cache_data(show_spinner=False)
+def load_assets(stamp: tuple) -> tuple[str, dict, dict]:  # stamp = file times, so CSS edits still apply live
+    tokens, skin, names, stats = (p.read_text(encoding="utf-8") for p in ASSETS)
+    return tokens + skin, json.loads(names), json.loads(stats)
 
 
 P = load_predictor()
 OPTS = P.options()
-CSS, COUNTRY_NAMES, STATS = load_assets()
+DEMO = {f["id"]: f for f in P.demo_films()}
+CSS, COUNTRY_NAMES, STATS = load_assets(tuple(p.stat().st_mtime for p in ASSETS))
 st.html(f"<style>{CSS}</style>")
 
 
-def html(markup: str) -> None:
-    st.markdown(markup, unsafe_allow_html=True)
+def html(markup: str, where=st) -> None:
+    where.markdown(markup, unsafe_allow_html=True)
+
+
+def flag(name: str, where=st) -> None:
+    """An invisible marker; fixed CSS rules in streamlit.css react to it with :has(). Unlike a
+    style block it disappears cleanly when a fragment reruns without it."""
+    html(f'<span class="cs-flag {name}"></span>', where)
 
 
 def section(title: str, desc: str) -> None:
@@ -96,7 +109,15 @@ def verdict(v: float) -> str:
     return "Exceptional" if v >= 8 else "Strong" if v >= 7 else "Solid" if v >= 6 else "Mixed" if v >= 5 else "Weak"
 
 
-# ---------------------------------------------------------------- people: one search box per role
+def nice_date(iso: str) -> str:
+    d = date.fromisoformat(iso)
+    return f"{d.day} {d:%B %Y}"
+
+
+# ---------------------------------------------------------------- people: one live search box per role
+PAYLOAD_KEY = {"director": "directors", "writer": "writers", "cast": "cast", "franchise": "franchise"}
+
+
 def _suggestion(r: dict) -> str:
     born = f" (b. {r['birth_year']})" if r.get("birth_year") else ""
     if r["prev_count"]:
@@ -105,86 +126,50 @@ def _suggestion(r: dict) -> str:
     return f"{r['name']}{born} · no earlier films"
 
 
-SEARCHBOX_STYLE = {
-    "wrapper": {"backgroundColor": "#ffffff"},
-    "clear": {"icon": "cross", "clearable": "never"},
-    "dropdown": {"rotate": True, "width": 14, "height": 14, "fill": "#333333"},
-    "searchbox": {
-        "control": {"borderRadius": 0, "border": "1px solid #8d8d8a", "minHeight": "42px", "boxShadow": "none",
-                    "&:hover": {"borderColor": "#111111"},
-                    "backgroundColor": "#ffffff", "fontFamily": '"Libre Franklin", "Segoe UI", Arial, sans-serif'},
-        "input": {"color": "#111111", "fontSize": "15px"},
-        "placeholder": {"color": "#767674", "fontSize": "15px"},
-        "menuList": {"backgroundColor": "#ffffff", "border": "1px solid #111111", "borderRadius": 0,
-                     "fontFamily": '"Libre Franklin", "Segoe UI", Arial, sans-serif', "fontSize": "14px"},
-        "option": {"color": "#111111", "backgroundColor": "#ffffff", "highlightColor": "#f2f2f0"},
-        "optionEmpty": "hidden",
-    },
-}
+def _add(role: str, person: dict) -> None:
+    """Click on a match. The button carries the person itself (not a list position), so a list
+    that changed in the meantime can never add the wrong name or fail."""
+    cur = st.session_state[f"picks_{role}"]
+    if person["id"] not in {p["id"] for p in cur} and len(cur) < ROLE_LIMITS[role]:
+        cur.append(person)
+    st.session_state[f"q_{role}"] = ""
 
 
 def _remove(role: str, pid: str) -> None:
     st.session_state[f"picks_{role}"] = [p for p in st.session_state[f"picks_{role}"] if p["id"] != pid]
-    if isinstance(st.session_state.get(f"sb_{role}"), dict):  # allow picking the same person again
-        st.session_state[f"sb_{role}"]["result"] = None
 
 
-def people_picker(role: str, title: str) -> list[str]:
-    """Type in one box, suggestions appear under it, click (or arrow + Enter) to add a name."""
+@st.fragment
+def people_box(role: str, title: str) -> None:
+    """Type in one box, matches appear under it, click one (or arrow down + Enter) to add it.
+    A fragment: typing and picking rerun only this box."""
     picks = st.session_state.setdefault(f"picks_{role}", [])
     limit = ROLE_LIMITS[role]
-    html(f'<p class="cs-label cs-label--box">{title}</p>')
-    if st_searchbox is None:
-        _fallback_box(role, limit)
-    else:
-        _searchbox(role, limit)
-    if picks:
+    full = len(picks) >= limit
+    with st.container(key=f"people_{role}"):
+        html(f'<p class="cs-label cs-label--box">{title}</p>')
+        q = st.text_input("Search", key=f"q_{role}", label_visibility="collapsed", autocomplete="off",
+                          disabled=full, placeholder=("Limit reached: remove a name to add another" if full else
+                                                      "e.g. Toy Story" if role == "franchise" else "Search a name…"),
+                          **LIVE)
+        q = (q or "").strip()
+        chosen = {p["id"] for p in picks}
+        hits = [h for h in P.search(role, q) if h["id"] not in chosen] if len(q) >= 2 and not full else []
+        # The match list and the tag row are always drawn, in the same places (empty ones are hidden
+        # by CSS), so a rerun never shifts one into the other's slot.
+        with st.container(key=f"hits_{role}"):
+            for h in hits:
+                st.button(_suggestion(h), key=f"hit_{role}_{h['id']}", on_click=_add, args=(role, h), width="stretch")
+            if len(q) >= 2 and not full and not hits:
+                html('<p class="cs-hint">No matches. Check the spelling, or leave this empty for a debut.</p>')
         with st.container(key=f"tags_{role}", horizontal=True):
             for p in picks:
                 extra = f"avg {p['prev_mean']:.1f}" if p["prev_count"] else "debut"
                 st.button(f"{p['name']} · {extra}  ×", key=f"rm_{role}_{p['id']}", on_click=_remove,
                           args=(role, p["id"]), help=f"Remove {p['name']}")
-    return [p["id"] for p in picks]
-
-
-def _add_person(role: str, limit: int, person: dict) -> None:
-    cur = st.session_state[f"picks_{role}"]
-    if isinstance(person, dict) and person["id"] not in {p["id"] for p in cur} and len(cur) < limit:
-        cur.append(person)
-
-
-def _searchbox(role: str, limit: int) -> None:
-    """streamlit-searchbox: type in one box, suggestions appear under it, pick one."""
-    def search(q: str) -> list:
-        return [(_suggestion(r), r) for r in P.search(role, q)] if len(q.strip()) >= 2 else []
-
-    with st.container(key=f"sbwrap_{role}"):
-        st_searchbox(search, placeholder="e.g. Toy Story" if role == "franchise" else "Search a name…",
-                     key=f"sb_{role}", clear_on_submit=True, debounce=150, style_overrides=SEARCHBOX_STYLE,
-                     submit_function=lambda r: _add_person(role, limit, r))
-
-
-def _pick_match(role: str, limit: int) -> None:
-    pid = st.session_state.get(f"pick_{role}")
-    if pid:
-        _add_person(role, limit, st.session_state[f"hits_{role}"][pid])
-    st.session_state[f"pick_{role}"] = None
-    st.session_state[f"q_{role}"] = ""
-
-
-def _fallback_box(role: str, limit: int) -> None:
-    """Built-in widgets only (used in the browser Space): search box, then a list of matches to pick from."""
-    q = st.text_input("Search", key=f"q_{role}", label_visibility="collapsed",
-                      placeholder="e.g. Toy Story" if role == "franchise" else "Search a name…")
-    hits = P.search(role, q) if q and len(q.strip()) >= 2 else []
-    if hits:
-        st.session_state[f"hits_{role}"] = {h["id"]: h for h in hits}
-        st.selectbox("Matches", list(st.session_state[f"hits_{role}"]), index=None, key=f"pick_{role}",
-                     label_visibility="collapsed", placeholder=f"{len(hits)} match{'es' if len(hits) > 1 else ''}: pick one",
-                     format_func=lambda i: _suggestion(st.session_state[f"hits_{role}"][i]),
-                     on_change=_pick_match, args=(role, limit))
-    elif q and len(q.strip()) >= 2:
-        html('<p class="cs-hint">No matches. Check the spelling, or leave this empty for a debut.</p>')
+        last = st.session_state.get("last")
+        if last and last[0][PAYLOAD_KEY[role]] != build_payload()[PAYLOAD_KEY[role]]:
+            flag("cs-is-stale")
 
 
 # ---------------------------------------------------------------- charts (same geometry as app/static/app.js)
@@ -260,6 +245,7 @@ def share_below(v: float) -> float:
     return sum(c for i, c in enumerate(STATS["counts"]) if 1 + i / 10 < v - 1e-9) / STATS["n"]
 
 
+@st.cache_data(show_spinner=False)
 def hist_svg(pred: float | None) -> str:
     """Histogram of all films' ratings (0.2-wide bins), average line, optional forecast marker."""
     c = STATS["counts"]
@@ -291,12 +277,29 @@ def years() -> str:
 
 
 # ---------------------------------------------------------------- result rendering
-def render_result(res: dict, genres: list[str], stale: bool) -> None:
+def actual_box(film: dict, pred: float, lo: float, hi: float) -> str:
+    """Real 2026 film: the forecast next to the rating IMDb users actually gave it."""
+    a = film["actual"]
+    inside = lo <= a["rating"] <= hi
+    diff = pred - a["rating"]
+    off = ("exactly right" if abs(diff) < 0.05 else
+           f"{abs(diff):.1f} point{'' if abs(diff) == 1 else 's'} {'too high' if diff > 0 else 'too low'}")
+    return f"""
+  <div class="cs-actual {'is-in' if inside else 'is-out'}">
+    <p class="cs-actual__eyebrow">Reality check · real 2026 film</p>
+    <div class="cs-actual__row"><span>Actual IMDb rating</span><strong>{a['rating']:.1f}</strong></div>
+    <div class="cs-actual__row"><span>Our forecast · 80% range</span><strong>{pred:.1f} <small>({lo:.1f} to {hi:.1f})</small></strong></div>
+    <p class="cs-actual__verdict">{'Inside' if inside else 'Outside'} the 80% range · forecast {off}</p>
+    <p class="cs-actual__note">Actual IMDb rating: {a['rating']:.1f} (checked on {nice_date(DEMO_META['checked_on'])},
+      {a['votes']:,} votes). The model learned only from films up to February 2022 and never saw this film.</p>
+    <p class="cs-actual__note">{escape(DEMO_META.get('note', ''))} ({escape(film.get('band', ''))}).</p>
+  </div>"""
+
+
+def render_result(res: dict, genres: list[str], demo_film: dict | None) -> None:
     lo, hi = res["interval_80"]
     pred = res["prediction"]
     title = f" · {escape(res['title'])}" if res["title"] else ""
-    stale_note = ('<p class="cs-stale">Inputs changed since this forecast. '
-                  'Press <strong>Predict rating</strong> to update it.</p>') if stale else ""
 
     active = [d for d in res["drivers"] if abs(d["effect"]) >= 0.005]
     idle = [d["group"].lower() for d in res["drivers"] if abs(d["effect"]) < 0.005]
@@ -320,8 +323,8 @@ def render_result(res: dict, genres: list[str], stale: bool) -> None:
     pct = int(share_below(pred) * 100 + 0.5)
 
     html(f"""
-<div class="cs-result {'is-stale' if stale else ''}">
-  {stale_note}
+<div class="cs-result">
+  <p class="cs-stale">Inputs changed since this forecast. Press <strong>Predict rating</strong> to update it.</p>
   <p class="cs-eyebrow">Predicted IMDb rating{title}</p>
   <div class="cs-score"><span class="cs-score__num">{pred:.1f}</span><span class="cs-score__of">/ 10</span>
     <span class="cs-verdict">{verdict(pred)}</span></div>
@@ -330,6 +333,7 @@ def render_result(res: dict, genres: list[str], stale: bool) -> None:
     <p class="cs-range__text"><strong>80% range: {lo:.1f} to {hi:.1f}</strong>
       Comparable films land here about 4 times in 5.</p>
   </div>
+  {actual_box(demo_film, pred, lo, hi) if demo_film else ""}
   <div class="cs-block">
     <h3>How it compares</h3>
     <p class="cs-desc">This forecast next to the average rating of the people's earlier films
@@ -371,53 +375,55 @@ def render_empty() -> None:
 
 # ---------------------------------------------------------------- keyboard + scrolling (runs in the page)
 # Enter moves to the next field (Streamlit has no form submit on Enter; only Predict runs the model).
+# In a people box: arrow down (or Enter) goes to the matches, arrows move, Enter adds, Escape goes back.
 # The script is added to the parent page once, so it keeps working across reruns.
 PAGE_JS = r"""
 (function () {
   const doc = document;
   const main = () => doc.querySelector('[data-testid="stMain"]') || doc.body;
-  const isBox = f => f.tagName === "IFRAME";
   function fields() {
-    // typed inputs, the first segment (day) of each date field, and the people search boxes
+    // typed inputs and the first segment (day) of each date field
     return [...main().querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=date]), ' +
-      '[data-testid="stDateInputField"] [role="spinbutton"][data-type="day"], iframe[src*="streamlit_searchbox"]')]
+      '[data-testid="stDateInputField"] [role="spinbutton"][data-type="day"]')]
       .filter(f => f.offsetParent !== null && !f.disabled);
   }
   function focusField(f) {
     if (!f) { const b = doc.querySelector('.st-key-predict button'); if (b) b.focus(); return; }
-    if (isBox(f)) { try { f.contentDocument.querySelector("input").focus(); return; } catch (e) {} }
     f.focus();
   }
   function next(from) {
     from = from.closest && from.closest('[data-testid="stDateInputField"]') || from;   // a date counts as one field
     return fields().find(f => !from.contains(f) && (from.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING));
   }
+  const peopleBox = t => t.closest && t.closest('[class*="st-key-people_"]');
+  const hits = box => [...box.querySelectorAll('[class*="st-key-hits_"] button')];
   doc.addEventListener("keydown", e => {
-    const t = e.target;
+    const t = e.target, box = peopleBox(t);
+    if (box && !e.isComposing) {                                       // people search + its matches
+      const list = hits(box), i = list.indexOf(t), input = box.querySelector("input");
+      if (t === input && list.length && (e.key === "ArrowDown" || (e.key === "Enter" && input.value.trim()))) {
+        e.preventDefault(); e.stopPropagation(); list[0].focus(); return;
+      }
+      if (i >= 0 && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+        e.preventDefault(); const j = i + (e.key === "ArrowDown" ? 1 : -1);
+        (j < 0 ? input : list[Math.min(j, list.length - 1)]).focus(); return;
+      }
+      if (i >= 0 && e.key === "Escape") { e.preventDefault(); input.focus(); return; }
+      if (i >= 0) return;                                              // Enter / Space click the match
+    }
     const typed = (t.tagName === "INPUT" && t.type !== "checkbox") || t.getAttribute("role") === "spinbutton";
     if (e.key !== "Enter" || e.isComposing || !typed) return;
     if (t.getAttribute("aria-expanded") === "true") return;           // a select menu is open
     if (!main().contains(t)) return;
     setTimeout(() => focusField(next(t)), 0);                          // Streamlit still commits the value
   }, true);
-  // search boxes live in iframes: Enter with no suggestion list open moves on as well
-  function hook(frame) {
-    try {
-      const d = frame.contentDocument;
-      if (!d || d.__csHooked || !d.querySelector("input")) return;
-      d.__csHooked = true;
-      const f = d.createElement("link");                                // same body font as the page
-      f.rel = "stylesheet"; f.href = "https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600&display=swap";
-      d.head.appendChild(f);
-      d.addEventListener("keydown", e => {
-        if (e.key !== "Enter") return;
-        if (d.querySelector('[class*="menu"]')) return;                 // suggestion list open: let it pick
-        e.preventDefault();
-        focusField(next(frame));
-      }, true);
-    } catch (e) {}
-  }
-  setInterval(() => doc.querySelectorAll('iframe[src*="streamlit_searchbox"]').forEach(hook), 700);
+  // after a name is added the list disappears: put the cursor back in that box
+  doc.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest('[class*="st-key-hits_"] button');
+    if (!b) return;
+    const key = [...b.closest('[class*="st-key-people_"]').classList].find(c => c.startsWith("st-key-people_"));
+    setTimeout(() => { const i = doc.querySelector("." + key + " input"); if (i && !i.disabled) i.focus(); }, 250);
+  }, true);
   // budget: commas appear while typing and the helper line spells the amount out (as in Flask)
   const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
   function words(n) {
@@ -477,17 +483,25 @@ if (!d.getElementById("cs-page-js")) {{
 </script>""", height=1)
 
 
-# ---------------------------------------------------------------- masthead
+# ---------------------------------------------------------------- masthead + light / dark switch
+st.session_state.setdefault("theme", "Light")
+if st.session_state.theme is None:  # Streamlit without `required`: clicking the active option clears it
+    st.session_state.theme = st.session_state.get("theme_prev", "Light")
+st.session_state.theme_prev = st.session_state.theme
 m = OPTS["metrics"]
-html(f"""
+with st.container(key="masthead"):
+    if st.session_state.theme == "Dark":
+        flag("cs-theme-dark")  # tokens.css switches every colour (charts included) on this marker
+    html(f"""
 <div class="cs-filmstrip" aria-hidden="true"></div>
 <header class="cs-masthead">
   <h1 class="cs-brand">CineScore</h1>
   <p class="cs-tagline">Forecast a film's IMDb rating before it opens.</p>
   <p class="cs-meta">{escape(re.sub(r'\s*\(.*?\)', '', OPTS['model']))} · tested on 4,118 unseen films · off by {m['MAE']:.2f} points on average</p>
 </header>""")
+    st.segmented_control("Colour theme", ["Light", "Dark"], key="theme", label_visibility="collapsed", **REQUIRED)
 
-# ---------------------------------------------------------------- form state, example film, clear
+# ---------------------------------------------------------------- form state, example film, demo films, clear
 LANGS = [l["code"] for l in OPTS["languages"]]
 COUNTRIES = sorted(OPTS["countries"], key=lambda c: COUNTRY_NAMES.get(c, c))
 # Main inputs start empty (the user must choose them); minor ones keep a default shown in the label.
@@ -500,6 +514,7 @@ EXAMPLE = {"title": "Orbital", "release": date(2027, 6, 1), "runtime": 150, "bud
            "lang": "en", "country": "US", "major": True, "genres_drama": True, "genres_sci_fi": True}
 EXAMPLE_PEOPLE = {"director": "Christopher Nolan", "cast": "Cillian Murphy"}
 BUDGET_MSG = "Budget must be between $10,000 and $1,000,000,000 (or leave it empty)."
+DEMO_META = {k: v for k, v in (P.demo or {}).items() if k != "films"}
 
 
 def clear_form() -> None:
@@ -508,9 +523,8 @@ def clear_form() -> None:
     for role in ROLE_LIMITS:
         st.session_state[f"picks_{role}"] = []
         st.session_state[f"q_{role}"] = ""
-        if isinstance(st.session_state.get(f"sb_{role}"), dict):
-            st.session_state[f"sb_{role}"]["result"] = None
-    st.session_state.pop("last", None)
+    for k in ("last", "demo_loaded", "demo_pending"):
+        st.session_state.pop(k, None)
     st.session_state.invalid = None
 
 
@@ -522,6 +536,52 @@ def fill_example() -> None:
         person = next((h for h in hits if h["name"] == name), hits[0] if hits else None)
         if person:
             st.session_state[f"picks_{role}"] = [person]
+
+
+def load_demo() -> None:
+    """Fill in a real 2026 film's pre-release information (from app/data/demo_2026.json)."""
+    f = DEMO.get(st.session_state.get("demo_pick"))
+    st.session_state.demo_pick = None  # back to the placeholder, so the same film can be loaded again
+    if not f:
+        return
+    clear_form()
+    countries = f["production_countries"]
+    st.session_state.update({
+        "title": f["title"], "release": date.fromisoformat(f["release_date"]), "runtime": f["runtime"],
+        "budget": f"{f['budget_usd']:,}" if f.get("budget_usd") else "",
+        "cert": f.get("us_certification") or "Not rated yet", "lang": f["original_language"],
+        "country": countries[0], "others": countries[1:],
+        "companies": f["n_production_companies"], "spoken": f["n_spoken_languages"],
+        "lead": {"yes": "Female", "no": "Male"}.get(f["female_lead"], "Not sure"), "major": f["major_studio"],
+        **{f"genres_{g}": True for g in f["genres"]}, **{f"keywords_{k}": True for k in f["keywords"]}})
+    for role in ROLE_LIMITS:
+        st.session_state[f"picks_{role}"] = [dict(p) for p in f["people"].get(role, [])]
+    st.session_state.demo_pending = f["id"]
+
+
+def build_payload() -> dict:
+    """The /predict body, built from the form's current values (same as before, and as in Flask)."""
+    s = st.session_state
+    release = s.get("release")
+    main_country = s.get("country")
+    franchise = s.get("picks_franchise") or []
+    lead = s.get("lead")
+    return {
+        "title": s.get("title"), "release_date": release.isoformat() if release else None,
+        "runtime": s.get("runtime"), "genres": [g for g in OPTS["genres"] if s.get(f"genres_{g}")],
+        "budget_usd": re.sub(r"[,\s$]", "", s.get("budget") or "") or None,
+        "us_certification": None if s.get("cert") == "Not rated yet" else s.get("cert"),
+        "directors": [p["id"] for p in s.get("picks_director") or []],
+        "writers": [p["id"] for p in s.get("picks_writer") or []],
+        "cast": [p["id"] for p in s.get("picks_cast") or []],
+        "franchise": franchise[0]["id"] if franchise else None,
+        "original_language": s.get("lang"),
+        "production_countries": ([main_country] if main_country else [])
+        + [c for c in s.get("others") or [] if c != main_country],
+        "n_production_companies": s.get("companies"), "n_spoken_languages": s.get("spoken"),
+        "female_lead": {"Male": "no", "Female": "yes"}.get(lead, "unknown"),
+        "major_studio": bool(s.get("major")), "keywords": [k for k in KEYWORDS if s.get(f"keywords_{k}")],
+    }
 
 
 def check_inputs(release, runtime, genres, lang, country, budget) -> tuple[str, str] | None:
@@ -558,47 +618,109 @@ def current_problem() -> tuple[str, str] | None:
 SERVER_FIELDS = [("release date", "release"), ("runtime", "runtime"), ("genre", "genres"), ("budget", "budget"),
                  ("production compan", "companies"), ("spoken language", "spoken"), ("language", "lang"),
                  ("country", "country")]
-FIELD_BOXES = {  # what gets the red border for each field
-    "release": '[data-testid="stDateInputField"]', "runtime": '[data-baseweb="input"]',
-    "budget": '[data-baseweb="input"]', "lang": '[data-baseweb="select"] > div',
-    "country": '[data-baseweb="select"] > div', "companies": '[data-baseweb="input"]',
-    "spoken": '[data-baseweb="input"]'}
 
 
 def field_error(key: str, where=st) -> None:
-    """Message under the field and a red border while this field is the invalid one."""
+    """Message under the field; the red border comes from a .cs-bad-<field> rule in streamlit.css."""
     bad = st.session_state.get("invalid")
     if not bad or bad[0] != key:
         return
-    where.markdown(f'<p class="cs-field-error" id="cs-field-error">{escape(bad[1])}</p>', unsafe_allow_html=True)
-    rule = (f".st-key-genres {{ margin-left: -15px; padding-left: 12px !important; border-left: 3px solid var(--cs-danger); }}"
-            if key == "genres" else
-            f".stApp .st-key-{key} {FIELD_BOXES[key]} {{ border-color: var(--cs-danger) !important;"
-            f" box-shadow: 0 0 0 1px var(--cs-danger) !important; }}"
-            f".stApp .st-key-{key} [data-testid=\"stWidgetLabel\"] p {{ color: var(--cs-danger) !important; }}")
-    st.html(f"<style>{rule}</style>")
+    html(f'<p class="cs-field-error" id="cs-field-error">{escape(bad[1])}</p>', where)
+    flag(f"cs-bad-{key}", where)
+
+
+def recheck_invalid() -> None:
+    """Drop a field's error mark as soon as it is fixed (or update the message if it is still wrong)."""
+    s = st.session_state
+    if s.get("predict") or not s.get("invalid"):
+        return
+    now, field = current_problem(), s.invalid[0]
+    if field in ("companies", "spoken"):  # server-side checks: clear once the value changes
+        if s.get(field) != s.get("invalid_value"):
+            s.invalid = None
+    elif now and now[0] == field:
+        s.invalid = now   # still wrong: keep the mark, update the message
+    else:
+        s.invalid = None
+
+
+@st.fragment
+def form() -> None:
+    """All inputs. A fragment, so changing one reruns only the form, not the page."""
+    recheck_invalid()
+    with st.container(key="sec_film"):
+        section("Film details", "What the film is, how long it runs and what it costs.")
+        st.text_input("Working title *optional*", max_chars=200, key="title", placeholder="e.g. Untitled space drama")
+        c1, c2 = st.columns(2)
+        c1.date_input("Release date", format="DD/MM/YYYY", key="release",
+                      min_value=date(1980, 1, 1), max_value=date(2035, 12, 31))
+        c2.number_input("Runtime *minutes*", min_value=60, max_value=240, step=5, key="runtime", placeholder="e.g. 110")
+        field_error("release", c1)
+        field_error("runtime", c2)
+        c1, c2 = st.columns(2)
+        budget_raw = c1.text_input("Budget *US$, optional*", key="budget", placeholder="e.g. 40,000,000")
+        budget = re.sub(r"[,\s$]", "", budget_raw or "")
+        html(f'<p class="cs-help cs-budget-help">{budget_words(budget)}</p>', c1)
+        field_error("budget", c1)
+        c2.selectbox("US certification", ["Not rated yet"] + CERTIFICATIONS, key="cert")
+        checkbox_grid("genres", "Genres <em>pick 1 to 3</em>", OPTS["genres"], pretty_genre)
+        field_error("genres")
+        checkbox_grid("keywords", "Story elements <em>optional</em>", list(KEYWORDS), KEYWORDS.get)
+
+    with st.container(key="sec_people"):
+        section("People", "Search a name and pick it. The average rating of their earlier films "
+                          "feeds the model. Leave a role empty for a debut.")
+        c1, c2 = st.columns(2)
+        with c1:
+            people_box("director", "Director <em>up to 3</em>")
+        with c2:
+            people_box("writer", "Writers <em>up to 5</em>")
+        c1, c2 = st.columns(2)
+        with c1:
+            people_box("cast", "Lead cast <em>up to 3</em>")
+        with c2:
+            people_box("franchise", "Franchise <em>if a sequel</em>")
+        st.segmented_control("Lead role *default: Not sure*", ["Not sure", "Male", "Female"], key="lead")
+
+    with st.container(key="sec_prod"):
+        section("Production", "Where it is made, in which language, and by whom.")
+        c1, c2 = st.columns(2)
+        c1.selectbox("Original language", LANGS, key="lang", placeholder="Choose a language…",
+                     format_func=lambda c: LANGUAGE_NAMES.get(c, c))
+        main_country = c2.selectbox("Main production country", COUNTRIES, key="country",
+                                    placeholder="Choose a country…", format_func=lambda c: COUNTRY_NAMES.get(c, c))
+        field_error("lang", c1)
+        field_error("country", c2)
+        st.session_state.others = [c for c in st.session_state.others if c != main_country]
+        st.multiselect("Other countries *optional*", [c for c in COUNTRIES if c != main_country],
+                       key="others", format_func=lambda c: COUNTRY_NAMES.get(c, c), placeholder="Add countries")
+        c1, c2 = st.columns(2)
+        c1.number_input("Production companies *default: 2*", min_value=1, max_value=30, key="companies")
+        c2.number_input("Spoken languages *default: 1*", min_value=1, max_value=12, key="spoken")
+        field_error("companies", c1)
+        field_error("spoken", c2)
+        st.checkbox("A major studio is involved  \n*Disney, Warner, Universal, Sony, Paramount…*", key="major")
+
+    # markers for the parts of the page outside this fragment (see streamlit.css)
+    last = st.session_state.get("last")
+    now = build_payload()
+    if last and any(last[0][k] != now[k] for k in now if k not in PAYLOAD_KEY.values()):
+        flag("cs-is-stale")      # dims the forecast and shows "Inputs changed since this forecast"
+    if not st.session_state.get("invalid"):
+        flag("cs-field-ok")      # hides the field message next to Predict once the field is fixed
 
 
 for _k, _v in DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = list(_v) if isinstance(_v, list) else _v
 
-# Field-level errors. Predict was clicked in this run -> mark the first problem field (and focus it);
-# otherwise drop the mark as soon as that field is fixed (Streamlit sees a change on Enter or leaving the field).
+# Field-level errors. Predict was clicked in this run -> mark the first problem field (and focus it).
+# (Dropping the mark once the field is fixed happens in recheck_invalid(), inside the form.)
 focus_field = None
 pre_problem = current_problem() if st.session_state.get("predict") else None
 if st.session_state.get("predict"):
     st.session_state.invalid = pre_problem
     focus_field = pre_problem[0] if pre_problem else None
-elif st.session_state.get("invalid"):
-    now, field = current_problem(), st.session_state.invalid[0]
-    if field in ("companies", "spoken"):  # server-side checks: clear once the value changes
-        if st.session_state.get(field) != st.session_state.get("invalid_value"):
-            st.session_state.invalid = None
-    elif now and now[0] == field:
-        st.session_state.invalid = now   # still wrong: keep the mark, update the message
-    else:
-        st.session_state.invalid = None
 if st.session_state.pop("focus_next", None):  # set when /predict itself rejected a field
     focus_field = st.session_state.invalid[0] if st.session_state.get("invalid") else None
 
@@ -606,87 +728,29 @@ left, right = st.columns([736, 380], gap="small")  # same widths as the Flask gr
 
 with left:
     with st.container(key="formbar", horizontal=True):
-        html('<p class="cs-formbar__text">Fill the form with a sample film, or start again.</p>')
+        html('<p class="cs-formbar__text">Fill the form with a sample film or a real 2026 release, or start again.</p>')
         with st.container(key="formbar_btns", horizontal=True):
             st.button("Try an example film", key="example", on_click=fill_example)
+            if DEMO:
+                st.selectbox("Load a real 2026 film", list(DEMO), index=None, key="demo_pick", on_change=load_demo,
+                             label_visibility="collapsed", placeholder="Load a real 2026 film",
+                             format_func=lambda i: DEMO[i]["title"])
             st.button("Clear form", key="clear", on_click=clear_form)
 
-    with st.container(key="sec_film"):
-        section("Film details", "What the film is, how long it runs and what it costs.")
-        title = st.text_input("Working title *optional*", max_chars=200, key="title",
-                              placeholder="e.g. Untitled space drama")
-        c1, c2 = st.columns(2)
-        release = c1.date_input("Release date", format="DD/MM/YYYY", key="release",
-                                min_value=date(1980, 1, 1), max_value=date(2035, 12, 31))
-        runtime = c2.number_input("Runtime *minutes*", min_value=60, max_value=240, step=5, key="runtime",
-                                  placeholder="e.g. 110")
-        field_error("release", c1)
-        field_error("runtime", c2)
-        c1, c2 = st.columns(2)
-        budget_raw = c1.text_input("Budget *US$, optional*", key="budget", placeholder="e.g. 40,000,000")
-        budget = re.sub(r"[,\s$]", "", budget_raw or "")  # plain number for /predict, as in Flask
-        c1.markdown(f'<p class="cs-help cs-budget-help">{budget_words(budget)}</p>', unsafe_allow_html=True)
-        field_error("budget", c1)
-        cert = c2.selectbox("US certification", ["Not rated yet"] + CERTIFICATIONS, key="cert")
-        genres = checkbox_grid("genres", "Genres <em>pick 1 to 3</em>", OPTS["genres"], pretty_genre)
-        field_error("genres")
-        keywords = checkbox_grid("keywords", "Story elements <em>optional</em>", list(KEYWORDS), KEYWORDS.get)
-
-    with st.container(key="sec_people"):
-        section("People", "Search a name and pick it. The average rating of their earlier films "
-                          "feeds the model. Leave a role empty for a debut.")
-        c1, c2 = st.columns(2)
-        with c1:
-            directors = people_picker("director", "Director <em>up to 3</em>")
-        with c2:
-            writers = people_picker("writer", "Writers <em>up to 5</em>")
-        c1, c2 = st.columns(2)
-        with c1:
-            cast = people_picker("cast", "Lead cast <em>up to 3</em>")
-        with c2:
-            franchise = people_picker("franchise", "Franchise <em>if a sequel</em>")
-        lead = st.segmented_control("Lead role *default: Not sure*", ["Not sure", "Male", "Female"], key="lead")
-
-    with st.container(key="sec_prod"):
-        section("Production", "Where it is made, in which language, and by whom.")
-        c1, c2 = st.columns(2)
-        lang = c1.selectbox("Original language", LANGS, key="lang", placeholder="Choose a language…",
-                            format_func=lambda c: LANGUAGE_NAMES.get(c, c))
-        main_country = c2.selectbox("Main production country", COUNTRIES, key="country",
-                                    placeholder="Choose a country…", format_func=lambda c: COUNTRY_NAMES.get(c, c))
-        field_error("lang", c1)
-        field_error("country", c2)
-        st.session_state.others = [c for c in st.session_state.others if c != main_country]
-        other_countries = st.multiselect("Other countries *optional*", [c for c in COUNTRIES if c != main_country],
-                                         key="others", format_func=lambda c: COUNTRY_NAMES.get(c, c),
-                                         placeholder="Add countries")
-        c1, c2 = st.columns(2)
-        n_companies = c1.number_input("Production companies *default: 2*", min_value=1, max_value=30, key="companies")
-        n_languages = c2.number_input("Spoken languages *default: 1*", min_value=1, max_value=12, key="spoken")
-        field_error("companies", c1)
-        field_error("spoken", c2)
-        major = st.checkbox("A major studio is involved  \n*Disney, Warner, Universal, Sony, Paramount…*",
-                            key="major")
+    form()
 
     with st.container(key="actions"):
         error_slot = st.empty()
         go = st.button("Predict rating", type="primary", key="predict")
 
-payload = {
-    "title": title, "release_date": release.isoformat() if release else None, "runtime": runtime,
-    "genres": genres or [], "budget_usd": budget or None,
-    "us_certification": None if cert == "Not rated yet" else cert,
-    "directors": directors, "writers": writers, "cast": cast,
-    "franchise": franchise[0] if franchise else None,
-    "original_language": lang, "production_countries": ([main_country] if main_country else []) + other_countries,
-    "n_production_companies": n_companies, "n_spoken_languages": n_languages,
-    "female_lead": {"Male": "no", "Female": "yes"}.get(lead, "unknown"),
-    "major_studio": major, "keywords": keywords or [],
-}
+payload = build_payload()
+_demo_id = st.session_state.pop("demo_pending", None)
+if _demo_id in DEMO:  # remember exactly what the demo film filled in
+    st.session_state.demo_loaded = (_demo_id, payload)
 
 
-def show_error(title: str, msg: str) -> None:
-    error_slot.markdown(f'<div class="cs-alert" role="alert"><strong>{title}</strong>'
+def show_error(title: str, msg: str, field: bool = False) -> None:
+    error_slot.markdown(f'<div class="cs-alert{" cs-alert--field" if field else ""}" role="alert"><strong>{title}</strong>'
                         f'<span>{escape(msg)}</span></div>', unsafe_allow_html=True)
 
 
@@ -695,7 +759,7 @@ with right:
     with st.container(key="result"):
         if go:
             if pre_problem:
-                show_error("Please check this input", pre_problem[1])
+                show_error("Please check this input", pre_problem[1], field=True)
             else:
                 try:
                     with st.spinner("Running the model…"):
@@ -714,7 +778,11 @@ with right:
                     show_error("Something went wrong", "Something went wrong while predicting. Please try again.")
         last = st.session_state.get("last")
         if last:
-            render_result(last[1], last[0]["genres"], stale=last[0] != payload)
+            demo = st.session_state.get("demo_loaded")
+            film = DEMO[demo[0]] if demo and demo[1] == last[0] else None  # only for the film exactly as loaded
+            render_result(last[1], last[0]["genres"], film)
+            if last[0] != payload:
+                flag("cs-is-stale")
         else:
             render_empty()
 

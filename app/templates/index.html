@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CineScore</title>
   <meta name="description" content="Forecast a film's IMDb rating before it is released.">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#ffffff" id="theme-color">
+  <script>  /* night mode chosen earlier: apply before the page is drawn (no white flash) */
+    try { if (localStorage.getItem("cs-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='tokens.css') }}">
@@ -18,15 +21,21 @@
     <h1 class="brand">CineScore</h1>
     <p class="tagline">Forecast a film's IMDb rating before it opens.</p>
     <p class="meta" id="modelinfo"></p>
+    <div class="theme" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+    </div>
   </div>
 </header>
 
 <main class="wrap layout">
   <form id="form" class="sheet" novalidate>
     <div class="formbar">
-      <p>Fill the form with a sample film, or start again.</p>
+      <p>Fill the form with a sample film or a real 2026 release, or start again.</p>
       <div class="formbar__btns">
         <button type="button" class="btn btn--ghost" id="example">Try an example film</button>
+        <select id="demo" class="btn btn--ghost btn--select" aria-label="Load a real 2026 film" hidden>
+          <option value="">Load a real 2026 film</option></select>
         <button type="button" class="btn btn--ghost" id="clear">Clear form</button>
       </div>
     </div>
@@ -136,6 +145,15 @@
         <svg id="scale" class="chart" role="img" aria-label="Predicted rating and 80% range on a 1 to 10 scale"></svg>
         <p class="range__text"><strong>80% range: <span id="lo"></span> to <span id="hi"></span></strong>
           Comparable films land here about 4 times in 5.</p>
+      </div>
+
+      <div id="actual" class="actual" hidden>
+        <p class="actual__eyebrow">Reality check · real 2026 film</p>
+        <div class="actual__row"><span>Actual IMDb rating</span><strong id="actual-rating"></strong></div>
+        <div class="actual__row"><span>Our forecast · 80% range</span><strong id="actual-forecast"></strong></div>
+        <p class="actual__verdict" id="actual-verdict"></p>
+        <p class="actual__note" id="actual-note"></p>
+        <p class="actual__note" id="actual-rule"></p>
       </div>
 
       <div class="block">

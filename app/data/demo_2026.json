@@ -1,0 +1,504 @@
+{
+ "checked_on": "2026-11-22",
+ "source": "Actual ratings: IMDb Non-Commercial Datasets, title.ratings.tsv.gz downloaded 2026-11-22 (https://datasets.imdbws.com/). Pre-release details: IMDb title.basics and crew, TMDB API (https://www.themoviedb.org/). This product uses the TMDB API but is not endorsed or certified by TMDB.",
+ "note": "Films chosen as the most-voted 2026 release in each rating band",
+ "rule": "Candidates: 2026 feature films (runtime 60-240 min, not adult) with at least 20,000 votes in the latest IMDb ratings file and complete TMDB data (release date, budget, US certification, language, countries, companies, spoken languages, cast). Pick the most-voted candidate in each actual-rating band: below 6, 6-7, 7-7.5, 7.5-8, 8 and above (lower edge included). If a band is empty, take the next most-voted unused candidate from the nearest band(s) and say so. Fixed before looking at any prediction; not chosen by how well the model does.",
+ "bands": [
+  "below 6",
+  "6 to 7",
+  "7 to 7.5",
+  "7.5 to 8",
+  "8 and above"
+ ],
+ "substitutes": [],
+ "track_records": "Directors and writers: films from before 2026 only (demo IDs '<nconst>@pre2026'), because the app's regular lookups include 2026 films. Cast and franchise: dataset films up to 2025.",
+ "skipped": [],
+ "films": [
+  {
+   "id": "tt8814476",
+   "title": "Supergirl",
+   "imdb_url": "https://www.imdb.com/title/tt8814476/",
+   "release_date": "2026-06-24",
+   "runtime": 108,
+   "genres": [
+    "action",
+    "adventure",
+    "sci_fi"
+   ],
+   "budget_usd": 175000000,
+   "us_certification": "PG-13",
+   "original_language": "en",
+   "production_countries": [
+    "US"
+   ],
+   "n_production_companies": 4,
+   "n_spoken_languages": 1,
+   "major_studio": false,
+   "female_lead": "yes",
+   "keywords": [
+    "kw_superhero",
+    "kw_based_on_comic"
+   ],
+   "people": {
+    "director": [
+     {
+      "id": "nm0318916@pre2026",
+      "name": "Craig Gillespie",
+      "birth_year": 1967,
+      "prev_mean": 6.775,
+      "prev_count": 8,
+      "last_title": "Dumb Money",
+      "last_year": 2023
+     }
+    ],
+    "writer": [
+     {
+      "id": "nm2815009@pre2026",
+      "name": "Ana Nogueira",
+      "birth_year": 1985,
+      "prev_mean": null,
+      "prev_count": 0,
+      "last_title": null,
+      "last_year": null
+     },
+     {
+      "id": "nm0796950@pre2026",
+      "name": "Jerry Siegel",
+      "birth_year": 1914,
+      "prev_mean": 6.16,
+      "prev_count": 25,
+      "last_title": "Superman",
+      "last_year": 2025
+     },
+     {
+      "id": "nm0795975@pre2026",
+      "name": "Joe Shuster",
+      "birth_year": 1914,
+      "prev_mean": 6.16,
+      "prev_count": 25,
+      "last_title": "Superman",
+      "last_year": 2025
+     }
+    ],
+    "cast": [
+     {
+      "id": "73381",
+      "name": "Matthias Schoenaerts",
+      "birth_year": null,
+      "prev_mean": 6.542,
+      "prev_count": 19,
+      "last_title": "The Old Guard 2",
+      "last_year": 2025
+     }
+    ],
+    "franchise": []
+   },
+   "actual": {
+    "rating": 5.8,
+    "votes": 123409
+   },
+   "dropped": {
+    "other countries not in the model": [],
+    "writers beyond the form's 5": 0,
+    "cast without earlier films in the data": [
+     "Milly Alcock",
+     "Eve Ridley"
+    ]
+   },
+   "band": "below 6"
+  },
+  {
+   "id": "tt26657236",
+   "title": "Backrooms",
+   "imdb_url": "https://www.imdb.com/title/tt26657236/",
+   "release_date": "2026-05-27",
+   "runtime": 110,
+   "genres": [
+    "horror",
+    "sci_fi",
+    "thriller"
+   ],
+   "budget_usd": 10000000,
+   "us_certification": "R",
+   "original_language": "en",
+   "production_countries": [
+    "US",
+    "CA"
+   ],
+   "n_production_companies": 5,
+   "n_spoken_languages": 3,
+   "major_studio": true,
+   "female_lead": "no",
+   "keywords": [],
+   "people": {
+    "director": [
+     {
+      "id": "nm10735410@pre2026",
+      "name": "Kane Parsons",
+      "birth_year": 2005,
+      "prev_mean": null,
+      "prev_count": 0,
+      "last_title": null,
+      "last_year": null
+     }
+    ],
+    "writer": [
+     {
+      "id": "nm5829994@pre2026",
+      "name": "Will Soodik",
+      "birth_year": null,
+      "prev_mean": null,
+      "prev_count": 0,
+      "last_title": null,
+      "last_year": null
+     },
+     {
+      "id": "nm10735410@pre2026",
+      "name": "Kane Parsons",
+      "birth_year": 2005,
+      "prev_mean": null,
+      "prev_count": 0,
+      "last_title": null,
+      "last_year": null
+     }
+    ],
+    "cast": [
+     {
+      "id": "5294",
+      "name": "Chiwetel Ejiofor",
+      "birth_year": null,
+      "prev_mean": 6.586,
+      "prev_count": 28,
+      "last_title": "Bridget Jones: Mad About the Boy",
+      "last_year": 2025
+     },
+     {
+      "id": "1576786",
+      "name": "Renate Reinsve",
+      "birth_year": null,
+      "prev_mean": 6.72,
+      "prev_count": 5,
+      "last_title": "Sentimental Value",
+      "last_year": 2025
+     }
+    ],
+    "franchise": []
+   },
+   "actual": {
+    "rating": 6.7,
+    "votes": 254650
+   },
+   "dropped": {
+    "other countries not in the model": [],
+    "writers beyond the form's 5": 0,
+    "cast without earlier films in the data": [
+     "Finn Bennett"
+    ]
+   },
+   "band": "6 to 7"
+  },
+  {
+   "id": "tt11378946",
+   "title": "Michael",
+   "imdb_url": "https://www.imdb.com/title/tt11378946/",
+   "release_date": "2026-04-22",
+   "runtime": 127,
+   "genres": [
+    "biography",
+    "drama",
+    "history"
+   ],
+   "budget_usd": 250000000,
+   "us_certification": "PG-13",
+   "original_language": "en",
+   "production_countries": [
+    "US"
+   ],
+   "n_production_companies": 3,
+   "n_spoken_languages": 1,
+   "major_studio": true,
+   "female_lead": "no",
+   "keywords": [
+    "kw_based_on_true_story",
+    "kw_biography"
+   ],
+   "people": {
+    "director": [
+     {
+      "id": "nm0298807@pre2026",
+      "name": "Antoine Fuqua",
+      "birth_year": 1965,
+      "prev_mean": 6.682,
+      "prev_count": 17,
+      "last_title": "The Equalizer 3",
+      "last_year": 2023
+     }
+    ],
+    "writer": [
+     {
+      "id": "nm0517589@pre2026",
+      "name": "John Logan",
+      "birth_year": 1961,
+      "prev_mean": 6.756,
+      "prev_count": 18,
+      "last_title": "They/Them",
+      "last_year": 2022
+     }
+    ],
+    "cast": [
+     {
+      "id": "91671",
+      "name": "Colman Domingo",
+      "birth_year": null,
+      "prev_mean": 6.571,
+      "prev_count": 7,
+      "last_title": "The Running Man",
+      "last_year": 2025
+     },
+     {
+      "id": "9781",
+      "name": "Nia Long",
+      "birth_year": null,
+      "prev_mean": 5.987,
+      "prev_count": 15,
+      "last_title": "Fatal Affair",
+      "last_year": 2020
+     }
+    ],
+    "franchise": []
+   },
+   "actual": {
+    "rating": 7.3,
+    "votes": 200450
+   },
+   "dropped": {
+    "other countries not in the model": [],
+    "writers beyond the form's 5": 0,
+    "cast without earlier films in the data": [
+     "Jaafar Jackson"
+    ]
+   },
+   "band": "7 to 7.5"
+  },
+  {
+   "id": "tt22084616",
+   "title": "Spider-Man: Brand New Day",
+   "imdb_url": "https://www.imdb.com/title/tt22084616/",
+   "release_date": "2026-07-29",
+   "runtime": 145,
+   "genres": [
+    "action",
+    "adventure"
+   ],
+   "budget_usd": 225000000,
+   "us_certification": "PG-13",
+   "original_language": "en",
+   "production_countries": [
+    "US"
+   ],
+   "n_production_companies": 4,
+   "n_spoken_languages": 1,
+   "major_studio": true,
+   "female_lead": "no",
+   "keywords": [
+    "kw_superhero",
+    "kw_sequel",
+    "kw_based_on_comic"
+   ],
+   "people": {
+    "director": [
+     {
+      "id": "nm2308774@pre2026",
+      "name": "Destin Daniel Cretton",
+      "birth_year": 1978,
+      "prev_mean": 7.2,
+      "prev_count": 6,
+      "last_title": "Shang-Chi and the Legend of the Ten Rings",
+      "last_year": 2021
+     }
+    ],
+    "writer": [
+     {
+      "id": "nm0571344@pre2026",
+      "name": "Chris McKenna",
+      "birth_year": null,
+      "prev_mean": 6.963,
+      "prev_count": 8,
+      "last_title": "Ghosted",
+      "last_year": 2023
+     },
+     {
+      "id": "nm1273099@pre2026",
+      "name": "Erik Sommers",
+      "birth_year": null,
+      "prev_mean": 7.114,
+      "prev_count": 7,
+      "last_title": "Ghosted",
+      "last_year": 2023
+     },
+     {
+      "id": "nm0498278@pre2026",
+      "name": "Stan Lee",
+      "birth_year": 1922,
+      "prev_mean": 6.594,
+      "prev_count": 47,
+      "last_title": "Thunderbolts*",
+      "last_year": 2025
+     },
+     {
+      "id": "nm0228492@pre2026",
+      "name": "Steve Ditko",
+      "birth_year": 1927,
+      "prev_mean": 6.313,
+      "prev_count": 15,
+      "last_title": "Kraven the Hunter",
+      "last_year": 2024
+     }
+    ],
+    "cast": [
+     {
+      "id": "1136406",
+      "name": "Tom Holland",
+      "birth_year": null,
+      "prev_mean": 6.754,
+      "prev_count": 13,
+      "last_title": "Uncharted",
+      "last_year": 2022
+     },
+     {
+      "id": "1590797",
+      "name": "Sadie Sink",
+      "birth_year": null,
+      "prev_mean": 6.0,
+      "prev_count": 6,
+      "last_title": "O'Dessa",
+      "last_year": 2025
+     }
+    ],
+    "franchise": [
+     {
+      "id": "531241",
+      "name": "Spider-Man (MCU) Collection",
+      "birth_year": null,
+      "prev_mean": 7.6,
+      "prev_count": 3,
+      "last_title": "Spider-Man: No Way Home",
+      "last_year": 2021
+     }
+    ]
+   },
+   "actual": {
+    "rating": 7.9,
+    "votes": 391978
+   },
+   "dropped": {
+    "other countries not in the model": [],
+    "writers beyond the form's 5": 0,
+    "cast without earlier films in the data": [
+     "Tramell Tillman"
+    ]
+   },
+   "band": "7.5 to 8"
+  },
+  {
+   "id": "tt12042730",
+   "title": "Project Hail Mary",
+   "imdb_url": "https://www.imdb.com/title/tt12042730/",
+   "release_date": "2026-03-15",
+   "runtime": 156,
+   "genres": [
+    "adventure",
+    "comedy",
+    "sci_fi"
+   ],
+   "budget_usd": 200000000,
+   "us_certification": "PG-13",
+   "original_language": "en",
+   "production_countries": [
+    "US"
+   ],
+   "n_production_companies": 5,
+   "n_spoken_languages": 1,
+   "major_studio": false,
+   "female_lead": "no",
+   "keywords": [
+    "kw_based_on_novel"
+   ],
+   "people": {
+    "director": [
+     {
+      "id": "nm0520488@pre2026",
+      "name": "Phil Lord",
+      "birth_year": 1975,
+      "prev_mean": 7.2,
+      "prev_count": 4,
+      "last_title": "22 Jump Street",
+      "last_year": 2014
+     },
+     {
+      "id": "nm0588087@pre2026",
+      "name": "Christopher Miller",
+      "birth_year": 1975,
+      "prev_mean": 7.2,
+      "prev_count": 4,
+      "last_title": "22 Jump Street",
+      "last_year": 2014
+     }
+    ],
+    "writer": [
+     {
+      "id": "nm1206844@pre2026",
+      "name": "Drew Goddard",
+      "birth_year": 1975,
+      "prev_mean": 7.22,
+      "prev_count": 5,
+      "last_title": "Bad Times at the El Royale",
+      "last_year": 2018
+     },
+     {
+      "id": "nm1083982@pre2026",
+      "name": "Andy Weir",
+      "birth_year": 1972,
+      "prev_mean": 8.0,
+      "prev_count": 1,
+      "last_title": "The Martian",
+      "last_year": 2015
+     }
+    ],
+    "cast": [
+     {
+      "id": "30614",
+      "name": "Ryan Gosling",
+      "birth_year": null,
+      "prev_mean": 6.992,
+      "prev_count": 26,
+      "last_title": "The Fall Guy",
+      "last_year": 2024
+     },
+     {
+      "id": "7152",
+      "name": "Sandra Hüller",
+      "birth_year": null,
+      "prev_mean": 6.938,
+      "prev_count": 8,
+      "last_title": "The Zone of Interest",
+      "last_year": 2023
+     }
+    ],
+    "franchise": []
+   },
+   "actual": {
+    "rating": 8.2,
+    "votes": 607539
+   },
+   "dropped": {
+    "other countries not in the model": [],
+    "writers beyond the form's 5": 0,
+    "cast without earlier films in the data": [
+     "James Ortiz"
+    ]
+   },
+   "band": "8 and above"
+  }
+ ]
+}

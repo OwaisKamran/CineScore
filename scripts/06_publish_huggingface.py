@@ -27,7 +27,7 @@ NAME = "cinescore"
 # Everything the Streamlit app needs at run time; nothing else from the repo goes into the Space.
 SPACE_FILES = ["streamlit_app/streamlit_app.py", "streamlit_app/streamlit.css", "app/predictor.py",
                "app/static/tokens.css", "app/data/lookups.json.gz", "app/data/country_names.json",
-               "app/data/rating_stats.json", "app/model/cinescore_pipeline.joblib", "app/model/metadata.json"]
+               "app/data/rating_stats.json", "app/data/demo_2026.json", "app/model/cinescore_pipeline.joblib", "app/model/metadata.json"]
 
 
 def fill(text: str, user: str) -> str:

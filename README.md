@@ -54,7 +54,10 @@ python scripts/04_build_features.py
 # notebooks/01_eda.ipynb, notebooks/02_modelling.ipynb  -> models/cinescore_pipeline.joblib
 TMDB_TOKEN=<token> python scripts/05_build_app_lookups.py         # app/data/lookups.json.gz
 copy models\cinescore_pipeline.joblib models\metadata.json app\model\   # (cp on Linux/macOS)
+TMDB_TOKEN=<token> python scripts/08_build_demo_2026.py           # app/data/demo_2026.json (real 2026 films)
 ```
+
+`TMDB_TOKEN` can also go in a `.env` file in the repository root (git-ignored).
 
 ## Run the web app locally (Flask)
 
@@ -76,6 +79,20 @@ streamlit run streamlit_app/streamlit_app.py     # open http://localhost:8501
 Run it from the repository root so `.streamlit/config.toml` (the theme) is picked up. Both apps share
 the same look through `app/static/tokens.css`. The Streamlit app reuses the same saved pipeline (`app/model/`), name lookups (`app/data/`) and
 validation code (`app/predictor.py`) as the Flask app.
+
+Both apps have a light / dark switch in the header (remembered in the browser in Flask, for the
+session in Streamlit). Name search uses a prefix index built once at start-up (under 2 ms per
+query). In Streamlit the form and each people box are fragments, so typing or changing an input
+reruns only that part of the page.
+
+### Real 2026 films (demo)
+
+"Load a real 2026 film" fills in the pre-release information of five real 2026 releases and, after
+Predict, shows the forecast next to the actual IMDb rating. The films come from a rule fixed before
+looking at any prediction (`scripts/08_build_demo_2026.py`, stored in `app/data/demo_2026.json`):
+among 2026 feature films with at least 20,000 IMDb votes and complete TMDB data, the most-voted film
+in each actual-rating band (below 6, 6-7, 7-7.5, 7.5-8, 8 and above). Directors' and writers' track
+records use only films released before 2026, like the training features. Nothing is retrained.
 
 ## Deployment
 
@@ -99,8 +116,8 @@ Deployments, from the options in the course guidelines:
 
    Static Spaces are free (Docker/Gradio Spaces on the free tier need PRO). The model is saved with
    scikit-learn 1.8.0, the version Pyodide 314 ships, so the same file runs in all three deployments.
-   In the browser the people search uses Streamlit's built-in widgets (search box + list of matches)
-   because custom components cannot load there; the first visit takes about a minute to start.
+   The app uses only built-in Streamlit widgets, so it behaves the same in the browser as on
+   Streamlit Cloud; the first visit takes about a minute to start.
 
 ## Repository layout
 

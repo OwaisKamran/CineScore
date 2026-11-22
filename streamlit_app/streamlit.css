@@ -6,19 +6,31 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecor
 #MainMenu, footer, .stDeployButton, [data-testid="stAppDeployButton"], [data-testid="stHeaderActionElements"],
 [data-testid="InputInstructions"] { display: none !important; }
 
-.stApp { background: var(--cs-bg); }
+body, .stApp { background: var(--cs-bg); }
 /* header graphic: full-width film strip (tile defined in tokens.css) */
 .cs-filmstrip { height: 26px; margin: 0 calc(50% - 50vw); background: var(--cs-filmstrip) repeat-x left top / 52px 26px; }
 /* page script (keyboard + scrolling) has no visible output */
 .st-key-cs_js { position: absolute !important; width: 0; height: 0; overflow: hidden; }
+/* state markers (flag() in streamlit_app.py): invisible, the rules below react to them */
+[data-testid="stElementContainer"]:has(.cs-flag) { display: none !important; }
 [data-testid="stMainBlockContainer"], .block-container { max-width: 1180px; padding: 0 var(--cs-gutter) 24px !important; }
 .stApp, .stApp p, .stApp label, .stApp input, .stApp button { font-family: var(--cs-sans); color: var(--cs-ink); }
 .stApp [data-testid="stMarkdownContainer"] p { margin: 0; }
 .stApp em { font-style: normal; color: var(--cs-faint); font-weight: 400; }
 
-/* ---------- masthead */
+/* ---------- masthead + light / dark switch (top right) */
+.st-key-masthead { position: relative; gap: 0 !important; }
 .cs-masthead { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 4px 28px;
   padding: 30px 0 16px; border-bottom: var(--cs-rule-double); }
+.st-key-theme { position: absolute !important; top: 40px; right: 0; width: auto !important; z-index: 2; }
+.st-key-theme [data-testid="stButtonGroup"] > div { gap: 0 !important; flex-wrap: nowrap !important; }
+.st-key-theme [data-testid="stButtonGroup"] button { min-height: 26px; height: 26px; padding: 0 10px; margin-left: -1px;
+  border-radius: 0 !important; border: 1px solid var(--cs-line-strong); background: var(--cs-bg); }
+.st-key-theme [data-testid="stButtonGroup"] button p { font: 600 10.5px var(--cs-sans) !important; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--cs-muted); }
+.st-key-theme [data-testid="stButtonGroup"] button:hover { background: var(--cs-hover); border-color: var(--cs-line-strong); }
+.st-key-theme [data-testid="stButtonGroup"] button[aria-checked="true"] { background: var(--cs-ink); border-color: var(--cs-ink); }
+.st-key-theme [data-testid="stButtonGroup"] button[aria-checked="true"] p { color: var(--cs-bg); }
 .stApp h1.cs-brand { margin: 0; padding: 0; font: 600 46px/0.95 var(--cs-serif); letter-spacing: -0.02em; color: var(--cs-ink); }
 .stApp .cs-tagline { padding-bottom: 3px; font: italic 400 19px/1.3 var(--cs-serif); color: var(--cs-muted); }
 .stApp .cs-meta { padding-bottom: 5px; font-size: 12px; color: var(--cs-faint); letter-spacing: .03em; text-align: right; }
@@ -30,7 +42,8 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecor
 /* ---------- form bar: example film + clear */
 .st-key-formbar { justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px 20px !important;
   padding: 18px 0; border-bottom: 1px solid var(--cs-line); }
-.st-key-formbar > div:first-child { width: auto !important; flex: 1 1 auto; }
+.st-key-formbar > div:first-child { width: 100% !important; flex: 1 1 100%; }
+.st-key-formbar [data-testid="stMarkdownContainer"] { margin-bottom: 0 !important; }
 .stApp .cs-formbar__text { font-size: 13.5px; color: var(--cs-muted); }
 .st-key-formbar > [data-testid="stLayoutWrapper"] { flex: 0 0 auto; width: auto !important; }
 .st-key-formbar_btns { width: auto !important; flex: 0 0 auto; flex-wrap: nowrap !important; gap: 8px !important; }
@@ -40,6 +53,11 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecor
 .st-key-example button p, .st-key-clear button p { font: 600 12px var(--cs-sans) !important; text-transform: uppercase;
   letter-spacing: .1em; color: var(--cs-ink); }
 .st-key-example button:hover, .st-key-clear button:hover { background: var(--cs-hover); border-color: var(--cs-ink); }
+/* "Load a real 2026 film": a select styled like the two buttons */
+.st-key-demo_pick { width: 212px !important; flex: 0 0 auto; }
+.st-key-demo_pick [data-baseweb="select"] > div, .st-key-demo_pick [role="group"] { min-height: 36px; border: 1px solid var(--cs-ink) !important; }
+.st-key-demo_pick input, .st-key-demo_pick [data-baseweb="select"] div, .st-key-demo_pick input::placeholder {
+  font: 600 12px var(--cs-sans) !important; text-transform: uppercase; letter-spacing: .1em; color: var(--cs-ink) !important; opacity: 1; }
 
 /* ---------- form sections */
 .st-key-sec_film, .st-key-sec_people, .st-key-sec_prod { padding: 24px 0 30px; border-top: var(--cs-rule); gap: 18px; }
@@ -74,6 +92,42 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecor
 body, [data-baseweb="popover"] *, [data-testid="stSelectboxVirtualDropdown"] * { font-family: var(--cs-sans) !important; }
 [data-baseweb="popover"] li:hover, [data-baseweb="popover"] li[aria-selected="true"] { background: var(--cs-hover) !important; }
 
+/* Streamlit 1.65+ draws its widgets with react-aria (data-testid / role, no baseweb): same square,
+   thin-ruled look, and every colour from the tokens so night mode reaches inside the widgets too */
+.stApp :is([data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-testid="stDateInputField"],
+  [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"]) {
+  background: var(--cs-bg) !important; border: 1px solid var(--cs-line-strong) !important; border-radius: 0 !important;
+  color: var(--cs-ink); transition: border-color var(--cs-ease), box-shadow var(--cs-ease); }
+.stApp :is([data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-testid="stDateInputField"],
+  [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"]):hover { border-color: var(--cs-ink) !important; }
+.stApp :is([data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-testid="stDateInputField"],
+  [data-testid="stSelectbox"] [role="group"], [data-testid="stMultiSelect"] [role="group"]):focus-within {
+  border-color: var(--cs-ink) !important; box-shadow: 0 0 0 1px var(--cs-ink) !important; }
+.stApp :is([data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-testid="stSelectbox"],
+  [data-testid="stMultiSelect"], [data-testid="stDateInputField"]) :is(input, [role="spinbutton"], span) { color: var(--cs-ink) !important; }
+.stApp :is([data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"]) input:disabled { color: var(--cs-faint) !important; }
+.stApp input::placeholder, .stApp [role="spinbutton"][data-placeholder="true"] { color: var(--cs-faint) !important; opacity: 1; }
+.stApp :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"], [data-testid="stDateInputField"]) button {
+  background: transparent !important; color: var(--cs-ink) !important; border: 0; }
+.stApp :is([data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"]) { background: var(--cs-bg) !important; color: var(--cs-muted) !important; }
+.stApp :is([data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"]):hover:not(:disabled) { background: var(--cs-hover) !important; color: var(--cs-ink) !important; }
+.stApp [data-testid="stCheckbox"] label > div:not([data-testid]) { width: 15px; height: 15px; margin: 2px 0 0; border-radius: 0 !important;
+  border: 1px solid var(--cs-line-strong) !important; background: var(--cs-bg) !important; box-shadow: none !important; }
+.stApp [data-testid="stCheckbox"] label > div:not([data-testid]) svg { display: none; }
+.stApp [data-testid="stCheckbox"] label:hover > div:not([data-testid]) { border-color: var(--cs-ink) !important; }
+.stApp [data-testid="stCheckbox"] label:has(input:checked) > div:not([data-testid]) {
+  border-color: var(--cs-ink) !important; background: var(--cs-ink) var(--cs-tick) center / 11px no-repeat !important; }
+.stApp button[role="radio"][aria-checked="true"] { background: var(--cs-ink) !important; border-color: var(--cs-ink) !important; }
+.stApp button[role="radio"][aria-checked="true"] p { color: var(--cs-bg) !important; }
+/* pop-up lists and the calendar sit outside .stApp, at the end of the page */
+[role="listbox"], [role="dialog"]:has([role="grid"]) { background: var(--cs-bg) !important; color: var(--cs-ink) !important;
+  border: 1px solid var(--cs-ink) !important; border-radius: 0 !important; }
+[role="listbox"] [role="option"] { background: var(--cs-bg) !important; color: var(--cs-ink) !important; }
+[role="listbox"] [role="option"]:is(:hover, [data-focused], [data-selected], [aria-selected="true"]) { background: var(--cs-hover) !important; }
+[role="listbox"] [role="option"] * { color: var(--cs-ink) !important; }
+[role="dialog"]:has([role="grid"]) * { color: var(--cs-ink); }
+[role="dialog"]:has([role="grid"]) [data-selected] { background: var(--cs-ink) !important; color: var(--cs-bg) !important; }
+
 /* genres + story elements: aligned grid of square checkboxes */
 .st-key-genres, .st-key-keywords { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 20px !important; }
 .st-key-genres > div, .st-key-keywords > div { width: auto !important; min-width: 0; }
@@ -89,9 +143,23 @@ body, [data-baseweb="popover"] *, [data-testid="stSelectboxVirtualDropdown"] * {
 .st-key-major p { font-size: 14.5px !important; }
 .st-key-major em { display: block; font-size: 12.5px; margin-top: 1px; }
 
-/* people: one search box per role (streamlit-searchbox iframe) + selected names as removable tags */
-.stApp [class*="st-key-sbwrap_"] iframe { display: block; }
+/* people: one live search box per role, matches listed under it, selected names as removable tags */
 .stApp .cs-label.cs-label--box { margin: 4px 0 2px !important; }
+.stApp [class*="st-key-people_"] { gap: 6px !important; }
+.stApp [data-testid="stMarkdownContainer"]:has(> .cs-label--box) { margin-bottom: 0 !important; }
+.stApp [class*="st-key-hits_"] { gap: 0 !important; margin-top: -4px; border: 1px solid var(--cs-ink);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .08); background: var(--cs-bg); }
+.stApp [class*="st-key-hits_"] > div { width: 100% !important; }
+.stApp [class*="st-key-hits_"]:not(:has(button)) { border: 0; box-shadow: none; margin-top: 0; }
+.stApp :is([class*="st-key-hits_"], [class*="st-key-tags_"]):not(:has(button, .cs-hint)) { display: none !important; }
+.stApp [data-testid="stLayoutWrapper"]:has(> :is([class*="st-key-hits_"], [class*="st-key-tags_"]):not(:has(button, .cs-hint))) { display: none !important; }
+.stApp [class*="st-key-hits_"] button { justify-content: flex-start; min-height: 38px; padding: 7px 12px; border: 0;
+  border-top: 1px solid var(--cs-line); border-radius: 0; background: var(--cs-bg); text-align: left; }
+.stApp [class*="st-key-hits_"] > div:first-child button { border-top: 0; }
+.stApp [class*="st-key-hits_"] button p { font-size: 14px; color: var(--cs-ink); text-align: left; white-space: normal; }
+.stApp [class*="st-key-hits_"] button:hover, .stApp [class*="st-key-hits_"] button:focus-visible {
+  background: var(--cs-hover); color: var(--cs-ink); box-shadow: none; outline: none; }
+.stApp [class*="st-key-hits_"] button:focus-visible { box-shadow: inset 3px 0 0 var(--cs-ink); }
 .stApp [class*="st-key-tags_"] { gap: 6px !important; }
 .stApp [class*="st-key-tags_"] button { min-height: 30px; padding: 0 10px; border: 1px solid var(--cs-line-strong);
   border-radius: 0; background: var(--cs-bg); }
@@ -124,8 +192,47 @@ body, [data-baseweb="popover"] *, [data-testid="stSelectboxVirtualDropdown"] * {
 /* ---------- result column */
 .st-key-result { padding: 26px 0 24px 36px; scroll-margin-top: 12px; border-left: 1px solid var(--cs-line); }
 .st-key-result [data-testid="stSpinner"] { color: var(--cs-muted); font-size: 13.5px; }
-.cs-result.is-stale .cs-score, .cs-result.is-stale .cs-range, .cs-result.is-stale .cs-block { opacity: .5; }
-.stApp .cs-stale { margin: 0 0 16px !important; padding: 8px 12px; border-left: 3px solid var(--cs-ink); background: var(--cs-hover); font-size: 13px; }
+/* inputs changed since the forecast (marker from the form fragment): dim it and say so */
+.stApp .cs-stale { display: none; margin: 0 0 16px !important; padding: 8px 12px; border-left: 3px solid var(--cs-ink); background: var(--cs-hover); font-size: 13px; }
+.stApp:has(.cs-is-stale) .cs-stale { display: block; }
+.stApp:has(.cs-is-stale) .cs-result :is(.cs-score, .cs-range, .cs-actual, .cs-block) { opacity: .5; }
+/* the field message next to Predict goes away once that field is fixed */
+.stApp:has(.cs-field-ok) .cs-alert--field { display: none; }
+/* field-level errors: red border and label on the field named by the marker */
+.stApp:has(.cs-bad-release) .st-key-release [data-testid="stDateInputField"],
+.stApp:has(.cs-bad-runtime) .st-key-runtime [data-baseweb="input"],
+.stApp:has(.cs-bad-budget) .st-key-budget [data-baseweb="input"],
+.stApp:has(.cs-bad-companies) .st-key-companies [data-baseweb="input"],
+.stApp:has(.cs-bad-spoken) .st-key-spoken [data-baseweb="input"],
+.stApp:has(.cs-bad-lang) .st-key-lang [data-baseweb="select"] > div,
+.stApp:has(.cs-bad-country) .st-key-country [data-baseweb="select"] > div,
+.stApp:has(.cs-bad-runtime) .st-key-runtime [data-testid="stNumberInputContainer"],
+.stApp:has(.cs-bad-companies) .st-key-companies [data-testid="stNumberInputContainer"],
+.stApp:has(.cs-bad-spoken) .st-key-spoken [data-testid="stNumberInputContainer"],
+.stApp:has(.cs-bad-budget) .st-key-budget [data-testid="stTextInputRootElement"],
+.stApp:has(.cs-bad-lang) .st-key-lang [role="group"],
+.stApp:has(.cs-bad-country) .st-key-country [role="group"] {
+  border-color: var(--cs-danger) !important; box-shadow: 0 0 0 1px var(--cs-danger) !important; }
+.stApp:has(.cs-bad-release) .st-key-release [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-runtime) .st-key-runtime [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-budget) .st-key-budget [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-companies) .st-key-companies [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-spoken) .st-key-spoken [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-lang) .st-key-lang [data-testid="stWidgetLabel"] p,
+.stApp:has(.cs-bad-country) .st-key-country [data-testid="stWidgetLabel"] p { color: var(--cs-danger) !important; }
+.stApp:has(.cs-bad-genres) .st-key-genres { margin-left: -15px; padding-left: 12px !important; border-left: 3px solid var(--cs-danger); }
+
+/* real 2026 film: forecast next to the actual IMDb rating */
+.cs-actual { margin: 0 0 22px; padding: 14px 16px 12px; border: 1px solid var(--cs-ink); border-left: 4px solid var(--cs-accent); }
+.cs-actual.is-out { border-left-color: var(--cs-danger); }
+.stApp .cs-actual__eyebrow { margin: 0 0 8px !important; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cs-muted); }
+.cs-actual__row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0;
+  border-top: 1px solid var(--cs-line); font-size: 13.5px; color: var(--cs-muted); }
+.cs-actual__row strong { font: 600 22px/1.1 var(--cs-serif); color: var(--cs-ink); white-space: nowrap; }
+.cs-actual__row strong small { font: 400 13px var(--cs-sans); color: var(--cs-faint); }
+.stApp .cs-actual__verdict { margin: 8px 0 4px !important; font-size: 13.5px; font-weight: 600; color: var(--cs-accent); }
+.cs-actual.is-out .cs-actual__verdict { color: var(--cs-danger); }
+.stApp .cs-actual__note { font-size: 12px; color: var(--cs-faint); }
 .stApp .cs-eyebrow { margin: 0 0 4px !important; font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cs-muted); }
 
 .stApp .cs-empty__num { margin: 18px 0 14px !important; font: 400 var(--cs-score-size)/0.86 var(--cs-serif); color: var(--cs-line); }

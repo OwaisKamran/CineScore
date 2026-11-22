@@ -8,6 +8,7 @@ Endpoints
   GET  /api/search       ?role=director|writer|cast|franchise&q=nol  -> name matches
   POST /predict          JSON film description -> predicted IMDb rating + 80% interval
   GET  /api/stats        rating distribution and genre averages for the context charts
+  GET  /api/demo         real 2026 films (pre-release inputs + actual IMDb rating) for the demo
   GET  /health           liveness check
 """
 import json
@@ -61,6 +62,12 @@ def predict():
 @app.get("/api/stats")
 def stats():
     return jsonify(STATS)
+
+
+@app.get("/api/demo")
+def demo():
+    meta = {k: v for k, v in (predictor.demo or {}).items() if k != "films"}
+    return jsonify(films=predictor.demo_films(), checked_on=meta.get("checked_on"), note=meta.get("note"))
 
 
 @app.get("/health")

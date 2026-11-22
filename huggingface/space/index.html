@@ -25,7 +25,7 @@
     const files = Object.fromEntries(FILES.map(p => [p, { url: "./" + p }]));
     mount({
       // scikit-learn 1.8.0, pandas 3.0.2, numpy 2.4.3 and joblib 1.5.3 come with Pyodide 314
-      // (streamlit-searchbox is not used in the browser; the app switches to built-in widgets there)
+      // (the app uses only built-in Streamlit widgets, so it runs the same here as on Streamlit Cloud)
       requirements: ["scikit-learn", "pandas", "numpy", "joblib"],
       entrypoint: "streamlit_app/streamlit_app.py",
       files,

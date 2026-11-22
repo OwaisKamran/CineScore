@@ -8,6 +8,8 @@ const EXAMPLE = { title: "Orbital", release_date: "2027-06-01", runtime: 150, bu
   people: { director: "Christopher Nolan", cast: "Cillian Murphy" } };
 let otherCountries = [];
 let STATS = null, lastGenres = [];
+let DEMO = { films: [] }, demoLoaded = null;   // real 2026 films; {film, snapshot} once one is loaded
+setupTheme();
 const regionName = (() => {
   try { const d = new Intl.DisplayNames(["en"], { type: "region" }); return c => d.of(c) || c; }
   catch { return c => c; }
@@ -16,8 +18,17 @@ const regionName = (() => {
 init();
 
 async function init() {
-  const [opt, stats] = await Promise.all(["api/options", "api/stats"].map(u => fetch(u).then(r => r.json())));
-  STATS = stats;
+  const [opt, stats, demo] = await Promise.all(["api/options", "api/stats", "api/demo"].map(u => fetch(u).then(r => r.json())));
+  STATS = stats; DEMO = demo;
+  if (DEMO.films.length) {
+    fillSelect($("#demo"), DEMO.films.map(f => [f.id, f.title]));
+    $("#demo").hidden = false;
+    $("#demo").addEventListener("change", e => {
+      const film = DEMO.films.find(f => f.id === e.target.value);
+      e.target.value = "";                       // back to the label, so the same film can be loaded again
+      if (film) fillDemo(film);
+    });
+  }
   $("#genres").append(...opt.genres.map(g => chip("checkbox", "genres", g, pretty(g))));
   $("#keywords").append(...opt.keywords.map(k => chip("checkbox", "keywords", k.key, k.label)));
   fillSelect($("#language"), opt.languages.map(l => [l.code, l.name]));   // main inputs start empty
@@ -51,6 +62,22 @@ async function init() {
   $("#hist-empty-desc").textContent = `IMDb ratings of the ${STATS.n.toLocaleString("en")} films the model ` +
     `learned from and was tested on (${STATS.years[0]}–${STATS.years[1]}). The average is ${STATS.mean.toFixed(1)}.`;
   drawHist($("#hist-empty"), null);
+}
+
+// Light / dark switch in the header. The choice is kept in localStorage; the inline script in
+// index.html applies it before the page is drawn. Charts use CSS variables, so they follow.
+function setupTheme() {
+  const root = document.documentElement;
+  const apply = t => {
+    if (t === "dark") root.dataset.theme = "dark"; else delete root.dataset.theme;
+    document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
+    $("#theme-color")?.setAttribute("content", t === "dark" ? "#121211" : "#ffffff");
+  };
+  apply(root.dataset.theme === "dark" ? "dark" : "light");
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.addEventListener("click", () => {
+    apply(b.dataset.themeSet);
+    try { localStorage.setItem("cs-theme", b.dataset.themeSet); } catch { /* private mode: not remembered */ }
+  }));
 }
 
 // Budget in US dollars: commas appear while typing, a helper line spells the amount out.
@@ -132,17 +159,26 @@ function setupAutocomplete(box) {
   const list = document.createElement("ul"); list.hidden = true; list.setAttribute("role", "listbox");
   const tags = document.createElement("div"); tags.className = "tags";
   box.append(input, list, tags);
-  let timer, items = [], active = -1;
+  let timer, items = [], active = -1, seq = 0;
+  const cache = new Map();                        // query -> matches, so going back is instant
 
+  // wait until typing pauses for 200 ms, then ask the server; an older answer that arrives
+  // after a newer one is ignored, so the list always matches what is in the box
   input.addEventListener("input", () => {
     clearTimeout(timer);
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2) { list.hidden = true; items = []; return; }
+    if (cache.has(q)) { items = cache.get(q); active = -1; render(); return; }
     timer = setTimeout(async () => {
-      const q = input.value.trim();
-      if (q.length < 2) { list.hidden = true; return; }
-      const r = await fetch(`api/search?role=${role}&q=${encodeURIComponent(q)}`);
-      items = r.ok ? await r.json() : [];
-      active = -1; render();
-    }, 150);
+      const mine = ++seq;
+      try {
+        const r = await fetch(`api/search?role=${role}&q=${encodeURIComponent(q)}`);
+        const found = r.ok ? await r.json() : [];
+        if (r.ok) cache.set(q, found);
+        if (mine !== seq || input.value.trim().toLowerCase() !== q) return;
+        items = found; active = -1; render();
+      } catch { /* offline: keep the current list */ }
+    }, 200);
   });
   input.addEventListener("keydown", e => {
     if (list.hidden) return;
@@ -281,7 +317,32 @@ function clearForm() {
   otherCountries = []; drawCountries();
   $("#budget-help").textContent = budgetWords(0);
   clearFieldError(); showError(null);
+  demoLoaded = null;
   $("#output").hidden = true; $("#placeholder").hidden = false;
+}
+
+// "Load a real 2026 film": only pre-release information (app/data/demo_2026.json). Directors and
+// writers carry their track record from before 2026, so the film's own rating is not in it.
+function fillDemo(film) {
+  clearForm();
+  const f = $("#form").elements;
+  f["title"].value = film.title;
+  f["release_date"].value = film.release_date;
+  f["runtime"].value = film.runtime;
+  f["budget_usd"].value = film.budget_usd ? withCommas(String(film.budget_usd)) : "";
+  $("#budget-help").textContent = budgetWords(film.budget_usd || 0);
+  f["us_certification"].value = film.us_certification || "";
+  film.genres.forEach(g => { $(`[name=genres][value=${g}]`).checked = true; });
+  film.keywords.forEach(k => { $(`[name=keywords][value=${k}]`).checked = true; });
+  f["original_language"].value = film.original_language;
+  f["main_country"].value = film.production_countries[0];
+  otherCountries = film.production_countries.slice(1); drawCountries();
+  f["n_production_companies"].value = film.n_production_companies;
+  f["n_spoken_languages"].value = film.n_spoken_languages;
+  $(`[name=female_lead][value=${film.female_lead}]`).checked = true;
+  f["major_studio"].checked = film.major_studio;
+  for (const role in picked) (film.people[role] || []).forEach(p => addPerson[role]({ ...p }));
+  demoLoaded = { film, snapshot: JSON.stringify(collect()) };
 }
 
 async function fillExample() {
@@ -319,7 +380,8 @@ async function onSubmit(e) {
       return hit ? showFieldError(hit[1], msg) : showError(msg);
     }
     lastGenres = payload.genres;
-    showResult(data);
+    // the reality check only applies to the real film exactly as loaded (not after edits)
+    showResult(data, demoLoaded && demoLoaded.snapshot === JSON.stringify(payload) ? demoLoaded.film : null);
   } catch {
     showError("Could not reach the server. Is it running?");
   } finally {
@@ -344,7 +406,30 @@ function verdict(v) {
   return v >= 8 ? "Exceptional" : v >= 7 ? "Strong" : v >= 6 ? "Solid" : v >= 5 ? "Mixed" : "Weak";
 }
 
-function showResult(d) {
+function niceDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${new Date(y, m - 1, d).toLocaleString("en-GB", { month: "long" })} ${y}`;
+}
+
+// real 2026 film: the forecast next to the rating IMDb users actually gave it
+function showActual(film, pred, lo, hi) {
+  const box = $("#actual");
+  box.hidden = !film;
+  if (!film) return;
+  const a = film.actual, inside = lo <= a.rating && a.rating <= hi, diff = pred - a.rating;
+  const off = Math.abs(diff) < 0.05 ? "exactly right"
+    : `${Math.abs(diff).toFixed(1)} point${Math.abs(diff) === 1 ? "" : "s"} ${diff > 0 ? "too high" : "too low"}`;
+  box.classList.toggle("is-out", !inside);
+  $("#actual-rating").textContent = a.rating.toFixed(1);
+  $("#actual-forecast").replaceChildren(pred.toFixed(1) + " ",
+    Object.assign(document.createElement("small"), { textContent: `(${lo.toFixed(1)} to ${hi.toFixed(1)})` }));
+  $("#actual-verdict").textContent = `${inside ? "Inside" : "Outside"} the 80% range · forecast ${off}`;
+  $("#actual-note").textContent = `Actual IMDb rating: ${a.rating.toFixed(1)} (checked on ${niceDate(DEMO.checked_on)}, ` +
+    `${a.votes.toLocaleString("en")} votes). The model learned only from films up to February 2022 and never saw this film.`;
+  $("#actual-rule").textContent = DEMO.note ? `${DEMO.note} (${film.band}).` : "";
+}
+
+function showResult(d, film) {
   $("#placeholder").hidden = true; $("#output").hidden = false;
   $("#out-title").textContent = d.title ? `Predicted IMDb rating · ${d.title}` : "Predicted IMDb rating";
   $("#score").textContent = d.prediction.toFixed(1);
@@ -352,6 +437,7 @@ function showResult(d) {
   const [lo, hi] = d.interval_80;
   $("#lo").textContent = lo.toFixed(1);
   $("#hi").textContent = hi.toFixed(1);
+  showActual(film, d.prediction, lo, hi);
   drawScale(d.prediction, lo, hi);
   drawCompare(d.prediction, d.track_record, lastGenres);
   drawHist($("#hist"), d.prediction);
@@ -365,7 +451,11 @@ function showResult(d) {
 
 function el(tag, attrs, text) {
   const n = document.createElementNS(NS, tag);
-  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  for (const k in attrs) {
+    // colours are CSS variables, set as style so the charts follow the light / dark switch
+    if ((k === "fill" || k === "stroke") && String(attrs[k]).startsWith("var(")) n.style[k] = attrs[k];
+    else n.setAttribute(k, attrs[k]);
+  }
   if (text != null) n.textContent = text;
   return n;
 }
@@ -373,7 +463,7 @@ function el(tag, attrs, text) {
 // ---------------------------------------------------------------- charts (same geometry in the Streamlit app)
 const W = 340, X0 = 8, X1 = 332;
 const xr = v => X0 + (Math.min(10, Math.max(1, v)) - 1) / 9 * (X1 - X0);
-const color = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const color = v => `var(${v})`;
 
 // 1-10 ruler: 80% range as a black band, the forecast as a green mark
 function drawScale(pred, lo, hi) {
