@@ -141,7 +141,28 @@ docs/       project report (PDF + DOCX) and app screenshots
 - Hugging Face model repo (pipeline + model card): https://huggingface.co/OwaisKamran/cinescore
 - Hugging Face Space (runs in the browser with stlite): https://huggingface.co/spaces/OwaisKamran/cinescore
 
-## Credits
+## References / credits
+
+Same numbering as the report ([docs/CineScore_Report.pdf](docs/CineScore_Report.pdf)).
+
+1. IMDb Non-Commercial Datasets. https://developer.imdb.com/non-commercial-datasets/ (accessed 20 Nov 2026).
+2. The Movie Database (TMDB) API v3. https://developer.themoviedb.org/ (accessed 20 Nov 2026).
+3. Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. JMLR 12, 2825–2830.
+4. Ke, G. et al. (2017). LightGBM: A Highly Efficient Gradient Boosting Decision Tree. NeurIPS 30
+   (the basis of scikit-learn's HistGradientBoosting).
+5. Harris, C. R. et al. (2020). Array programming with NumPy. Nature 585, 357–362.
+6. McKinney, W. (2010). Data Structures for Statistical Computing in Python (pandas). Proc. SciPy 2010, 56–61.
+7. Apache Parquet, https://parquet.apache.org, via PyArrow, https://arrow.apache.org
+8. Hunter, J. D. (2007). Matplotlib: A 2D Graphics Environment. Computing in Science & Engineering 9(3), 90–95.
+9. Waskom, M. L. (2021). seaborn: statistical data visualization. Journal of Open Source Software 6(60), 3021.
+10. Streamlit documentation and Streamlit Community Cloud. https://docs.streamlit.io
+11. stlite: Streamlit running in the browser on Pyodide. https://github.com/whitphx/stlite
+12. Pyodide: Python distribution for the browser (WebAssembly). https://pyodide.org
+13. Hugging Face Hub documentation (model repositories and Spaces). https://huggingface.co/docs/hub
+14. Flask documentation. https://flask.palletsprojects.com
+15. Google Fonts: Source Serif 4 and Libre Franklin, SIL Open Font License 1.1. https://fonts.google.com
+
+Data credits:
 
 - Information courtesy of IMDb (https://www.imdb.com). Used with permission (non-commercial).
   `app/data/lookups.json.gz` contains only aggregated per-person averages (previous-film mean
